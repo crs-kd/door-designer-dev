@@ -1,5 +1,5 @@
 
-import { imageOverloads, doorStyles, state, stepIDs } from "./data.js";
+import { imageOverloads, doorStyles, state, stepIDs, patioDoorSizeLimits } from "./data.js";
 import { showStep, updateNavigationControls } from "./main.js";
 
 /* 
@@ -96,12 +96,20 @@ function getDoorPanelDimensionsFromInput() {
   let widthInput = parseInt(widthInputEl.value);
   let heightInput = parseInt(heightInputEl.value);
 
-  const style = state.selectedStyle;
-  const styleObj = doorStyles.find(s => s.name === style);
-  const minW = styleObj?.minWidth || 600;
-  const maxW = styleObj?.maxWidth || 1200;
-  const minH = styleObj?.minHeight || 1800;
-  const maxH = styleObj?.maxHeight || 2200;
+  let minW, maxW, minH, maxH;
+  if (state.doorType === "patio") {
+    const limits = patioDoorSizeLimits[state.selectedConfiguration] || patioDoorSizeLimits["patio-2-right"];
+    minW = limits.minWidth;
+    maxW = limits.maxWidth;
+    minH = limits.minHeight;
+    maxH = limits.maxHeight;
+  } else {
+    const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
+    minW = styleObj?.minWidth || 600;
+    maxW = styleObj?.maxWidth || 1200;
+    minH = styleObj?.minHeight || 1800;
+    maxH = styleObj?.maxHeight || 2200;
+  }
 
   // Clamp values
   widthInput = Math.min(Math.max(widthInput, minW), maxW);

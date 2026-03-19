@@ -9,6 +9,7 @@ import {
   hardwareColorDisplayNames,
   state,
   configurations,
+  patioDoorConfigurations,
   hardwareColorOptions,
   handleOptions,
   sidescreenGlazingDefs,
@@ -76,10 +77,20 @@ function updateConfigurationOptionVisibility() {
   const leftInputWrapper = document.getElementById("leftSidescreenWidthInput")?.closest(".size-input");
   const rightInputWrapper = document.getElementById("rightSidescreenWidthInput")?.closest(".size-input");
   const fanlightInputWrapper = document.getElementById("fanLightHeightInput")?.closest(".size-input");
-  
+
   const sidescreenStyleStep = document.getElementById("step-sidescreenStyle");
 
   const sidescreenStyleMenu = document.querySelector('.step-menu-item[data-index="1"]');
+
+  // Patio doors never have sidescreens or fanlights
+  if (state.doorType === "patio") {
+    if (leftInputWrapper) leftInputWrapper.style.display = "none";
+    if (rightInputWrapper) rightInputWrapper.style.display = "none";
+    if (fanlightInputWrapper) fanlightInputWrapper.style.display = "none";
+    if (sidescreenStyleStep) sidescreenStyleStep.style.display = "none";
+    if (sidescreenStyleMenu) sidescreenStyleMenu.style.display = "none";
+    return;
+  }
 
   const config = state.selectedConfiguration;
 
@@ -141,7 +152,8 @@ function populateStylesByRange() {
 
 function populateConfigurationOptions() {
   const container = document.getElementById("configuration-list");
-  container.innerHTML = configurations.map(cfg => `
+  const configList = state.doorType === "patio" ? patioDoorConfigurations : configurations;
+  container.innerHTML = configList.map(cfg => `
     <div class="thumbnail" data-type="configuration" data-value="${cfg.value}">
       <img src="${getImageURL(cfg.value)}" alt="${cfg.name}" onerror="this.onerror=null; this.src='${getImageURL('placeholder-thumb')}'">
       <p>${cfg.name}</p>

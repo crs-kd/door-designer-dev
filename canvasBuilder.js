@@ -41,6 +41,7 @@ import { doorRanges } from "./data.js";
 import { state } from "./data.js";
 import { sidescreenStyleDefs } from "./data.js";
 import { sidescreenGlazingDefs } from "./data.js";
+import { patioDoorSizeLimits } from "./data.js";
 
 import {
   doorOverlayMouseDown,
@@ -1229,9 +1230,266 @@ function parseConfigurationFlags(configValue) {
   };
 }
 
+/*
+   ---------------------------------------------
+   Patio Door Rendering
+   ---------------------------------------------
+   Renders sliding patio doors with multiple panels.
+   Patio doors are built like sidescreens: frame + glass only.
+   No complex panel, molding, or decorative glazing options.
+*/
+async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showHandle = false, handleOnLeft = false) {
+  const finalCanvas = document.createElement("canvas");
+  finalCanvas.width = targetWidth;
+  finalCanvas.height = targetHeight;
+  const finalCtx = finalCanvas.getContext("2d");
+
+  // Step 1: Base fill (simple white/light background for glass area)
+  finalCtx.fillStyle = "rgba(200, 220, 240, 0.3)"; // Light glass-like color
+  finalCtx.fillRect(0, 0, targetWidth, targetHeight);
+
+  // Step 2: Frame elements — patio-specific images
+  const frameElements = [
+    {
+      id: "top-frame",
+      mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
+      options: { imageURL: getImageURL("patio-fixed-frame-x") },
+    },
+    {
+      id: "bottom-frame",
+      mixedRect: { y: "bottom", height: 35, xFactor: 0, widthFactor: 1 },
+      options: { imageURL: getImageURL("patio-fixed-frame-x"), flipVertical: true },
+    },
+    {
+      id: "left-frame",
+      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
+      options: { imageURL: getImageURL("patio-fixed-frame-y") },
+    },
+    {
+      id: "right-frame",
+      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
+      options: { imageURL: getImageURL("patio-fixed-frame-y"), flipHorizontal: true },
+    },
+    {
+      id: "top-left",
+      rect: { x: 0, y: 0, width: 35, height: 35 },
+      options: { imageURL: getImageURL("patio-fixed-corner") },
+    },
+    {
+      id: "top-right",
+      rect: { x: "right", y: 0, width: 35, height: 35 },
+      options: { imageURL: getImageURL("patio-fixed-corner"), flipHorizontal: true },
+    },
+    {
+      id: "bottom-left",
+      rect: { x: 0, y: "bottom", width: 35, height: 35 },
+      options: { imageURL: getImageURL("patio-fixed-corner"), flipVertical: true },
+    },
+    {
+      id: "bottom-right",
+      rect: { x: "right", y: "bottom", width: 35, height: 35 },
+      options: {
+        imageURL: getImageURL("patio-fixed-corner"),
+        flipVertical: true,
+        flipHorizontal: true,
+      },
+    },
+  ];
+
+  const frameMask = buildMoldingMask(
+    { elements: frameElements },
+    targetWidth,
+    targetHeight
+  );
+  const frameCanvas = await applyFinishToElementGroup({
+    width: targetWidth,
+    height: targetHeight,
+    finish: frameFinish,
+    elements: frameElements,
+    mask: frameMask,
+  });
+
+  finalCtx.drawImage(frameCanvas, 0, 0);
+
+  // Step 3: Simple clear glass effect (no decorative glazing patterns)
+  const glazeImg = await loadImage(getImageURL("clear"));
+  if (glazeImg) {
+    const margin = 40; // Inside the frame
+    const glassWidth = targetWidth - (margin * 2);
+    const glassHeight = targetHeight - (margin * 2);
+
+    finalCtx.globalAlpha = 0.3;
+    finalCtx.drawImage(glazeImg, margin, margin, glassWidth, glassHeight);
+    finalCtx.globalAlpha = 1.0;
+  }
+
+  // Step 4: Handle (on the opening/sliding panel only)
+  if (showHandle && state.selectedHandle && state.selectedHandle !== "none") {
+    const hDef = handleDefs.find((def) => def.id === state.selectedHandle);
+    if (hDef) {
+      const handleImg = await loadImage(getImageURL(state.selectedHandle));
+      if (handleImg) {
+        const hW = hDef.width;
+        const hH = hDef.height;
+        const hX = handleOnLeft ? hDef.offsetX : targetWidth - hW - hDef.offsetX;
+        const hY = (targetHeight - hH) / 2; // centre vertically for patio panels
+
+        const tintedHandle = tintImage(handleImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
+
+        finalCtx.save();
+        if (handleOnLeft) {
+          finalCtx.translate(hX + hW / 2, hY + hH / 2);
+          finalCtx.scale(-1, 1);
+          finalCtx.drawImage(tintedHandle, -hW / 2, -hH / 2, hW, hH);
+        } else {
+          finalCtx.drawImage(tintedHandle, hX, hY, hW, hH);
+        }
+        finalCtx.restore();
+
+        finalCtx.globalCompositeOperation = "multiply";
+        finalCtx.save();
+        if (handleOnLeft) {
+          finalCtx.translate(hX + hW / 2, hY + hH / 2);
+          finalCtx.scale(-1, 1);
+          finalCtx.drawImage(handleImg, -hW / 2, -hH / 2, hW, hH);
+        } else {
+          finalCtx.drawImage(handleImg, hX, hY, hW, hH);
+        }
+        finalCtx.restore();
+        finalCtx.globalCompositeOperation = "source-over";
+      }
+    }
+  }
+
+  return finalCanvas;
+}
+
+async function renderPatioDoor() {
+  const config = state.selectedConfiguration;
+  const { displayPixels } = getDoorPanelDimensionsFromInput();
+
+  // Determine panel count and which panels are opening (have handles)
+  // openingPanels: { [panelIndex]: { handleOnLeft: bool } }
+  // X = open/sliding panel, O = fixed panel
+  let numPanels = 2;
+  const openingPanels = {};
+
+  if (config === "patio-2-right") {
+    // O | X  —  right panel slides; handle on its left (inner) edge
+    numPanels = 2;
+    openingPanels[1] = { handleOnLeft: true };
+  } else if (config === "patio-2-left") {
+    // X | O  —  left panel slides; handle on its right (inner) edge
+    numPanels = 2;
+    openingPanels[0] = { handleOnLeft: false };
+  } else if (config === "patio-3panel") {
+    // O | X | O  —  middle panel slides; handle side is user-toggleable
+    numPanels = 3;
+    openingPanels[1] = { handleOnLeft: state.handleSide === "left" };
+  } else if (config === "patio-4panel") {
+    // O | X | X | O  —  inner two panels slide; handles on their meeting stile edges
+    numPanels = 4;
+    openingPanels[1] = { handleOnLeft: false }; // right edge faces panel 2
+    openingPanels[2] = { handleOnLeft: true };  // left edge faces panel 1
+  }
+
+  const totalWidth = displayPixels.width;
+  const totalHeight = displayPixels.height;
+  const panelWidth = totalWidth / numPanels;
+
+  const previewCanvas = document.getElementById("previewCanvas");
+  previewCanvas.width = totalWidth;
+  previewCanvas.height = totalHeight;
+
+  const ctx = previewCanvas.getContext("2d");
+  ctx.clearRect(0, 0, totalWidth, totalHeight);
+
+  const frameFinish = getCurrentFrameFinish();
+
+  for (let i = 0; i < numPanels; i++) {
+    const x = i * panelWidth;
+    const panelInfo = openingPanels[i];
+    const showHandle = !!panelInfo;
+    const handleOnLeft = panelInfo?.handleOnLeft ?? false;
+
+    const panelCanvas = await buildPatioDoorPanel(
+      panelWidth,
+      totalHeight,
+      frameFinish,
+      showHandle,
+      handleOnLeft
+    );
+
+    ctx.drawImage(panelCanvas, x, 0);
+  }
+
+  if (state.currentView === "internal") {
+    mirrorCanvas(previewCanvas);
+  }
+}
+
+function applyPatioConfigLimits(configValue) {
+  const limits = patioDoorSizeLimits[configValue] || patioDoorSizeLimits["patio-2-right"];
+  const wInput = document.getElementById("doorWidthInput");
+  const hInput = document.getElementById("doorHeightInput");
+
+  if (wInput) {
+    wInput.min = limits.minWidth;
+    wInput.max = limits.maxWidth;
+    if (parseInt(wInput.value) < limits.minWidth) wInput.value = limits.minWidth;
+    if (parseInt(wInput.value) > limits.maxWidth) wInput.value = limits.maxWidth;
+  }
+  if (hInput) {
+    hInput.min = limits.minHeight;
+    hInput.max = limits.maxHeight;
+    if (parseInt(hInput.value) < limits.minHeight) hInput.value = limits.minHeight;
+    if (parseInt(hInput.value) > limits.maxHeight) hInput.value = limits.maxHeight;
+  }
+
+  const styleSizeInfoEl = document.getElementById("styleSizeInfo");
+  if (styleSizeInfoEl) {
+    styleSizeInfoEl.innerHTML = `
+      <div class="style-size-table">
+        <table>
+          <tr><td></td><td><strong>Min</strong></td><td><strong>Max</strong></td></tr>
+          <tr><td><strong>Width</strong></td><td>${limits.minWidth.toLocaleString()}</td><td>${limits.maxWidth.toLocaleString()}</td></tr>
+          <tr><td><strong>Height</strong></td><td>${limits.minHeight.toLocaleString()}</td><td>${limits.maxHeight.toLocaleString()}</td></tr>
+        </table>
+      </div>`;
+  }
+}
+
+function updateDoorTypeControls() {
+  const hingeBtn = document.getElementById("hingeToggleBtn");
+  const hingeLabel = document.getElementById("hingeLabel");
+  if (!hingeBtn) return;
+
+  if (state.doorType === "patio") {
+    const isThreePanel = state.selectedConfiguration === "patio-3panel";
+    hingeBtn.disabled = !isThreePanel;
+    hingeBtn.style.opacity = isThreePanel ? "1" : "0.4";
+    hingeBtn.style.cursor = isThreePanel ? "pointer" : "not-allowed";
+    hingeBtn.innerHTML = '<i class="fa-solid fa-arrows-left-right"></i>';
+    if (hingeLabel) hingeLabel.textContent = "Handle Side";
+  } else {
+    hingeBtn.disabled = false;
+    hingeBtn.style.opacity = "1";
+    hingeBtn.style.cursor = "pointer";
+    hingeBtn.innerHTML = '<i class="fa-solid fa-door-open"></i>';
+    if (hingeLabel) hingeLabel.textContent = "Swap Hinge Side";
+  }
+}
+
 async function updateCanvasPreview() {
   try {
     const config = state.selectedConfiguration;
+
+    // Handle patio doors separately
+    if (state.doorType === "patio") {
+      await renderPatioDoor();
+      return;
+    }
+
     const flags = parseConfigurationFlags(config);
 
     const { displayPixels } = getDoorPanelDimensionsFromInput();
@@ -1576,51 +1834,62 @@ function addThumbnailClick(type) {
         switch (type) {
           case "configuration":
             state.selectedConfiguration = value;
-            state.selectedLeftPanel = "none";
-            state.selectedRightPanel = "none";
-            state.hasFanlight = false;
 
-            switch (value) {
-              case "single":
-                break;
-              case "single-left":
-                state.selectedLeftPanel = "sidescreen";
-                break;
-              case "single-right":
-                state.selectedRightPanel = "sidescreen";
-                break;
-              case "single-both":
-                state.selectedLeftPanel = "sidescreen";
-                state.selectedRightPanel = "sidescreen";
-                break;
-              case "fanlight":
-                state.hasFanlight = true;
-                break;
-              case "fanlight-left":
-                state.hasFanlight = true;
-                state.selectedLeftPanel = "sidescreen";
-                break;
-              case "fanlight-right":
-                state.hasFanlight = true;
-                state.selectedRightPanel = "sidescreen";
-                break;
-              case "fanlight-both":
-                state.hasFanlight = true;
-                state.selectedLeftPanel = "sidescreen";
-                state.selectedRightPanel = "sidescreen";
-                break;
-            }
+            if (state.doorType === "patio") {
+              // For 2-panel configs the handle side is fixed by the config choice
+              if (value === "patio-2-right") state.handleSide = "right";
+              else if (value === "patio-2-left") state.handleSide = "left";
+              // 3-panel: keep current handleSide (user-toggleable)
+              // 4-panel: handle positions are fixed; handleSide not used
+              applyPatioConfigLimits(value);
+              updateDoorTypeControls();
+            } else {
+              state.selectedLeftPanel = "none";
+              state.selectedRightPanel = "none";
+              state.hasFanlight = false;
 
-            updateConfigurationOptionVisibility();
+              switch (value) {
+                case "single":
+                  break;
+                case "single-left":
+                  state.selectedLeftPanel = "sidescreen";
+                  break;
+                case "single-right":
+                  state.selectedRightPanel = "sidescreen";
+                  break;
+                case "single-both":
+                  state.selectedLeftPanel = "sidescreen";
+                  state.selectedRightPanel = "sidescreen";
+                  break;
+                case "fanlight":
+                  state.hasFanlight = true;
+                  break;
+                case "fanlight-left":
+                  state.hasFanlight = true;
+                  state.selectedLeftPanel = "sidescreen";
+                  break;
+                case "fanlight-right":
+                  state.hasFanlight = true;
+                  state.selectedRightPanel = "sidescreen";
+                  break;
+                case "fanlight-both":
+                  state.hasFanlight = true;
+                  state.selectedLeftPanel = "sidescreen";
+                  state.selectedRightPanel = "sidescreen";
+                  break;
+              }
 
-            const firstSidescreenThumb = document.querySelector(
-              `.thumbnail[data-type="sidescreenStyle"]`
-            );
-            if (firstSidescreenThumb) {
-              const firstSideValue =
-                firstSidescreenThumb.getAttribute("data-value");
-              state.selectedSidescreenStyle = firstSideValue;
-              markSelected("sidescreenStyle", firstSideValue);
+              updateConfigurationOptionVisibility();
+
+              const firstSidescreenThumb = document.querySelector(
+                `.thumbnail[data-type="sidescreenStyle"]`
+              );
+              if (firstSidescreenThumb) {
+                const firstSideValue =
+                  firstSidescreenThumb.getAttribute("data-value");
+                state.selectedSidescreenStyle = firstSideValue;
+                markSelected("sidescreenStyle", firstSideValue);
+              }
             }
             break;
 
@@ -1739,24 +2008,88 @@ function getStepIndexFromType(type) {
    Start Screen
    ---------------------------------------------
 */
-function populateStartRangeThumbnails() {
+function populateStartDoorTypeThumbnails() {
   const container = document.querySelector(".start-range-container");
-  container.innerHTML = doorRanges
+
+  // SVG icons for door types
+  const singleDoorSVG = `
+    <svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="10" width="60" height="120" rx="2" stroke-width="3"/>
+      <rect x="30" y="20" width="40" height="50" rx="1" stroke-width="2"/>
+      <circle cx="40" cy="75" r="3" fill="#fff"/>
+    </svg>
+  `;
+
+  const patioDoorSVG = `
+    <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="10" width="60" height="120" rx="2" stroke-width="3"/>
+      <rect x="70" y="10" width="60" height="120" rx="2" stroke-width="3"/>
+      <rect x="18" y="18" width="44" height="104" rx="1" stroke-width="2"/>
+      <rect x="78" y="18" width="44" height="104" rx="1" stroke-width="2"/>
+    </svg>
+  `;
+
+  const doorTypes = [
+    { value: "single", name: "Single Door", svg: singleDoorSVG },
+    { value: "patio", name: "Patio Door", svg: patioDoorSVG }
+  ];
+
+  container.innerHTML = doorTypes
     .map(
-      (rng) => `
-    <div class="thumbnail range-thumbnail" data-range="${rng}">
-      <img src="${getImageURL(rng + "-thumb")}" alt="${rng}">
-      <p>${rng}</p>
+      (type) => `
+    <div class="door-type-button" data-door-type="${type.value}">
+      ${type.svg}
+      <p>${type.name}</p>
     </div>
   `
     )
     .join("");
 
   document
-    .querySelectorAll(".start-range-container .range-thumbnail")
+    .querySelectorAll(".start-range-container .door-type-button")
     .forEach((thumb) => {
       thumb.addEventListener("click", () => {
-        state.selectedRange = thumb.getAttribute("data-range");
+        state.doorType = thumb.getAttribute("data-door-type");
+        state.selectedRange = doorRanges[0]; // Default to first range
+
+        // Set default configuration and dimensions based on door type
+        if (state.doorType === "patio") {
+          state.selectedConfiguration = "patio-2-right";
+          state.handleSide = "right"; // default matches patio-2-right
+          // Set default width/height then apply per-config limits and size info
+          document.getElementById("doorWidthInput").value = 2400;
+          document.getElementById("doorHeightInput").value = 2100;
+          applyPatioConfigLimits("patio-2-right");
+
+          // Hide panel and glazing steps for patio doors
+          document.getElementById("panelMenuItem").style.display = "none";
+          document.getElementById("glazingMenuItem").style.display = "none";
+          document.getElementById("style-step").style.display = "none";
+          document.getElementById("glazing-step").style.display = "none";
+
+          updateDoorTypeControls();
+        } else {
+          state.selectedConfiguration = "single";
+          // Standard door dimensions
+          const wInput = document.getElementById("doorWidthInput");
+          const hInput = document.getElementById("doorHeightInput");
+          wInput.value = 900;
+          wInput.min = 0;
+          wInput.max = 5000;
+          hInput.value = 2100;
+          hInput.min = 0;
+          hInput.max = 5000;
+
+          // Show panel and glazing steps for single doors
+          document.getElementById("panelMenuItem").style.display = "inline-block";
+          document.getElementById("glazingMenuItem").style.display = "inline-block";
+          document.getElementById("style-step").style.display = "block";
+          document.getElementById("glazing-step").style.display = "block";
+
+          updateDoorTypeControls();
+        }
+
+        populateConfigurationOptions(); // Populate configurations for selected door type
         populateStylesByRange();
         document.getElementById("startScreen").classList.add("hidden");
         document.querySelector(".door-designer-container").style.display =
@@ -1777,7 +2110,7 @@ function initializeStartScreen() {
   );
   startScreen.classList.remove("hidden");
   doorDesignerContainer.style.display = "none";
-  populateStartRangeThumbnails();
+  populateStartDoorTypeThumbnails();
 }
 
 /*

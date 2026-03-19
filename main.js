@@ -1,5 +1,5 @@
 import { updateCanvasPreview } from "./canvasBuilder.js";
-import { state, stepIDs} from "./data.js";
+import { state, stepIDs, doorStyles, patioDoorSizeLimits } from "./data.js";
 import { updateConfigurationOptionVisibility } from './ui.js';
 
 /*
@@ -82,11 +82,17 @@ export {
 function validateDoorDimensionInput(inputId, dimensionType) {
   const input = document.getElementById(inputId);
   input.addEventListener("change", () => {
-    const style = doorStyles.find((s) => s.name === state.selectedStyle);
-    if (!style) return;
-
-    const min = dimensionType === "width" ? style.minWidth : style.minHeight;
-    const max = dimensionType === "width" ? style.maxWidth : style.maxHeight;
+    let min, max;
+    if (state.doorType === "patio") {
+      const limits = patioDoorSizeLimits[state.selectedConfiguration] || patioDoorSizeLimits["patio-2-right"];
+      min = dimensionType === "width" ? limits.minWidth : limits.minHeight;
+      max = dimensionType === "width" ? limits.maxWidth : limits.maxHeight;
+    } else {
+      const style = doorStyles.find((s) => s.name === state.selectedStyle);
+      if (!style) return;
+      min = dimensionType === "width" ? style.minWidth : style.minHeight;
+      max = dimensionType === "width" ? style.maxWidth : style.maxHeight;
+    }
 
     let value = parseInt(input.value);
     if (isNaN(value)) return;

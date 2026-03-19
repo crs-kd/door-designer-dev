@@ -61,25 +61,41 @@
       }
       .start-range-container {
         display: flex;
-        gap: 50px;
+        gap: 30px;
         margin-top: 30px;
         justify-content: center;
       }
 
-      .range-thumbnail {
+      .door-type-button {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 30px;
+        width: 200px;
         cursor: pointer;
-        transition: transform 0.3s ease;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
       }
-      .range-thumbnail:hover {
-        transform: scale(1.01);
-        transition: transform 0.3s ease;
+      .door-type-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-5px);
       }
-      .range-thumbnail img {
-        border-radius: 8px;
-        max-width: 100%;
-        height: auto;
-        display: block;
-        margin: 0 auto 10px;
+      .door-type-button svg {
+        width: 80px;
+        height: 80px;
+        fill: none;
+        stroke: #fff;
+        stroke-width: 2;
+      }
+      .door-type-button p {
+        margin: 0;
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 500;
       }
 
       /* -------------------------------------------------
@@ -231,18 +247,10 @@
       }
       /* Only the active step group is visible */
       .thumbnail-container .step {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        opacity: 0;
         display: none;
-        transition: opacity 0.5s ease;
       }
       .thumbnail-container .step.step-active {
-        opacity: 1;
         display: block;
-        position: relative;
       }
       .thumbnail-container h3.collection-title {
         margin: 20px 0 10px;
@@ -462,8 +470,8 @@
         <!-- Tagline or heading -->
         <h2>Your dream door is only a few steps away</h2>
         <!-- Instructional text -->
-        <p>Please select a range to begin</p>
-        <!-- Range selection thumbnails will be populated by JS -->
+        <p>Please select a door type to begin</p>
+        <!-- Door type selection thumbnails will be populated by JS -->
         <div class="start-range-container"></div>
       </div>
     </div>
@@ -480,10 +488,10 @@
         </div>
         <div class="step-menu">
           <span data-index="0" class="step-menu-item">Configuration</span>
-          <span data-index="1"class="step-menu-item hidden" id="sidescreenMenuItem">Sidescreen</span>
-          <span data-index="2" class="step-menu-item">Panel</span>
+          <span data-index="1" class="step-menu-item hidden" id="sidescreenMenuItem">Sidescreen</span>
+          <span data-index="2" class="step-menu-item" id="panelMenuItem">Panel</span>
           <span data-index="3" class="step-menu-item">Colour</span>
-          <span data-index="4" class="step-menu-item">Glazing</span>
+          <span data-index="4" class="step-menu-item" id="glazingMenuItem">Glazing</span>
           <span data-index="5" class="step-menu-item">Hardware</span>
         </div>
 
@@ -613,7 +621,7 @@
             <button id="hingeToggleBtn">
               <i class="fa-solid fa-door-open"></i>
             </button>
-            <label for="viewToggleBtn">Swap Hinge Side</label>
+            <label id="hingeLabel" for="hingeToggleBtn">Swap Hinge Side</label>
             <span class="icon-spacer"> </span>
 
             <button id="viewToggleBtn">

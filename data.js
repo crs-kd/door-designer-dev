@@ -518,6 +518,26 @@ const configurations = [
   { value: "single-left-right-fanlightwide", name: "Single panel with left and right sidescreen and full width fanlight" }
 ];
 
+// Patio door configurations
+// These configurations define different sliding patio door panel options.
+// Each configuration represents a different number of sliding panels.
+// Note: Patio doors use the same styling, glazing, and finish options as single doors.
+const patioDoorConfigurations = [
+  { value: "patio-2-right", name: "2-Panel (Right Opening)" },
+  { value: "patio-2-left",  name: "2-Panel (Left Opening)" },
+  { value: "patio-3panel",  name: "3-Panel Sliding Door" },
+  { value: "patio-4panel",  name: "4-Panel Sliding Door" },
+];
+
+// Size limits per patio configuration (overall opening dimensions in mm)
+// X = open/sliding panel, O = fixed panel
+const patioDoorSizeLimits = {
+  "patio-2-right": { minWidth: 1600, maxWidth: 3000, minHeight: 1900, maxHeight: 2400 }, // O|X
+  "patio-2-left":  { minWidth: 1600, maxWidth: 3000, minHeight: 1900, maxHeight: 2400 }, // X|O
+  "patio-3panel":  { minWidth: 2200, maxWidth: 3700, minHeight: 1900, maxHeight: 2400 }, // O|X|O
+  "patio-4panel":  { minWidth: 3000, maxWidth: 4900, minHeight: 1900, maxHeight: 2400 }, // O|X|X|O
+};
+
 // Optional display name lookups
 const styleDisplayNames = {
   lorimer: "Lorimer",
@@ -1953,6 +1973,7 @@ const stepIDs = [
 export const state = {
   currentStep: 0,
   stepsCompleted: Array(7).fill(true),
+  doorType: "single", // Door type: "single" for traditional entry doors, "patio" for sliding patio doors
   selectedRange: doorRanges[0],
   selectedStyle: "berlin",
   selectedConfiguration: "single",
@@ -1976,6 +1997,7 @@ export const state = {
 
 export {
   configurations,
+  patioDoorConfigurations,
   doorCollections,
   doorRanges,
   doorStyles,
@@ -1998,4 +2020,5 @@ export {
   handleOptions,
   sidescreenGlazingDefs,
   sidescreenStyleDefs,
+  patioDoorSizeLimits,
 };
