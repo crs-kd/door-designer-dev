@@ -1323,41 +1323,42 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
     finalCtx.globalAlpha = 1.0;
   }
 
-  // Step 4: Handle (on the opening/sliding panel only)
-  if (showHandle && state.selectedHandle && state.selectedHandle !== "none") {
-    const hDef = handleDefs.find((def) => def.id === state.selectedHandle);
-    if (hDef) {
-      const handleImg = await loadImage(getImageURL(state.selectedHandle));
-      if (handleImg) {
-        const hW = hDef.width;
-        const hH = hDef.height;
-        const hX = handleOnLeft ? hDef.offsetX : targetWidth - hW - hDef.offsetX;
-        const hY = (targetHeight - hH) / 2; // centre vertically for patio panels
+  // Step 4: Patio handle — always uses patio.png, positioned at the outer edge of the sliding panel
+  if (showHandle) {
+    const handleImg = await loadImage(getImageURL("patio"));
+    if (handleImg) {
+      // Display dimensions scaled from 476×847 source image
+      const hW = 50;
+      const hH = 89;
+      const hOffsetX = 10; // distance from panel edge
+      const hX = handleOnLeft ? hOffsetX : targetWidth - hW - hOffsetX;
+      const hY = (targetHeight - hH) / 2; // centred vertically
 
-        const tintedHandle = tintImage(handleImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
+      const tintedHandle = tintImage(handleImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
 
-        finalCtx.save();
-        if (handleOnLeft) {
-          finalCtx.translate(hX + hW / 2, hY + hH / 2);
-          finalCtx.scale(-1, 1);
-          finalCtx.drawImage(tintedHandle, -hW / 2, -hH / 2, hW, hH);
-        } else {
-          finalCtx.drawImage(tintedHandle, hX, hY, hW, hH);
-        }
-        finalCtx.restore();
-
-        finalCtx.globalCompositeOperation = "multiply";
-        finalCtx.save();
-        if (handleOnLeft) {
-          finalCtx.translate(hX + hW / 2, hY + hH / 2);
-          finalCtx.scale(-1, 1);
-          finalCtx.drawImage(handleImg, -hW / 2, -hH / 2, hW, hH);
-        } else {
-          finalCtx.drawImage(handleImg, hX, hY, hW, hH);
-        }
-        finalCtx.restore();
-        finalCtx.globalCompositeOperation = "source-over";
+      finalCtx.save();
+      if (handleOnLeft) {
+        // Mirror so the D-grip opens toward the panel interior
+        finalCtx.translate(hX + hW / 2, hY + hH / 2);
+        finalCtx.scale(-1, 1);
+        finalCtx.drawImage(tintedHandle, -hW / 2, -hH / 2, hW, hH);
+      } else {
+        finalCtx.drawImage(tintedHandle, hX, hY, hW, hH);
       }
+      finalCtx.restore();
+
+      // Multiply shading pass
+      finalCtx.globalCompositeOperation = "multiply";
+      finalCtx.save();
+      if (handleOnLeft) {
+        finalCtx.translate(hX + hW / 2, hY + hH / 2);
+        finalCtx.scale(-1, 1);
+        finalCtx.drawImage(handleImg, -hW / 2, -hH / 2, hW, hH);
+      } else {
+        finalCtx.drawImage(handleImg, hX, hY, hW, hH);
+      }
+      finalCtx.restore();
+      finalCtx.globalCompositeOperation = "source-over";
     }
   }
 
@@ -1375,22 +1376,26 @@ async function renderPatioDoor() {
   const openingPanels = {};
 
   if (config === "patio-2-right") {
-    // O | X  —  right panel slides; handle on its left (inner) edge
+    // O | X  —  right panel slides LEFT into O; handle on outer (right) edge
     numPanels = 2;
-    openingPanels[1] = { handleOnLeft: true };
+    openingPanels[1] = { handleOnLeft: false };
   } else if (config === "patio-2-left") {
-    // X | O  —  left panel slides; handle on its right (inner) edge
+    // X | O  —  left panel slides RIGHT into O; handle on outer (left) edge
     numPanels = 2;
-    openingPanels[0] = { handleOnLeft: false };
+    openingPanels[0] = { handleOnLeft: true };
   } else if (config === "patio-3panel") {
-    // O | X | O  —  middle panel slides; handle side is user-toggleable
+    // O | X | O  —  middle panel slides; handle on side AWAY from the panel it slides into
+    // handleSide "left" means door slides right → handle on left outer edge
+    // handleSide "right" means door slides left → handle on right outer edge
     numPanels = 3;
     openingPanels[1] = { handleOnLeft: state.handleSide === "left" };
   } else if (config === "patio-4panel") {
-    // O | X | X | O  —  inner two panels slide; handles on their meeting stile edges
+    // O | X | X | O  —  inner two panels slide outward to their respective fixed panels
+    // Panel 1 slides LEFT into panel 0 → handle on right (outer) edge
+    // Panel 2 slides RIGHT into panel 3 → handle on left (outer) edge
     numPanels = 4;
-    openingPanels[1] = { handleOnLeft: false }; // right edge faces panel 2
-    openingPanels[2] = { handleOnLeft: true };  // left edge faces panel 1
+    openingPanels[1] = { handleOnLeft: false };
+    openingPanels[2] = { handleOnLeft: true };
   }
 
   const totalWidth = displayPixels.width;
