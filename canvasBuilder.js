@@ -1238,69 +1238,81 @@ function parseConfigurationFlags(configValue) {
    Patio doors are built like sidescreens: frame + glass only.
    No complex panel, molding, or decorative glazing options.
 */
-async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showHandle = false, handleOnLeft = false) {
+async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showHandle = false, handleOnLeft = false, isOpeningPanel = false, hiddenEdge = null) {
   const finalCanvas = document.createElement("canvas");
   finalCanvas.width = targetWidth;
   finalCanvas.height = targetHeight;
   const finalCtx = finalCanvas.getContext("2d");
 
-  // Step 1: Base fill (simple white/light background for glass area)
-  finalCtx.fillStyle = "rgba(200, 220, 240, 0.3)"; // Light glass-like color
+  // Step 1: Base fill
+  finalCtx.fillStyle = "rgba(200, 220, 240, 0.3)";
   finalCtx.fillRect(0, 0, targetWidth, targetHeight);
 
-  // Step 2: Frame elements — patio-specific images
+  // Step 2: Frame — opening panels use patio-open-* images, fixed panels use patio-fixed-*
+  const framePrefix = isOpeningPanel ? "patio-open" : "patio-fixed";
+  const cornerImg  = getImageURL(`${framePrefix}-corner`);
+  const frameXImg  = getImageURL(`${framePrefix}-frame-x`);
+  const frameYImg  = getImageURL(`${framePrefix}-frame-y`);
+
+  // Top and bottom rails are always present
   const frameElements = [
     {
       id: "top-frame",
       mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
-      options: { imageURL: getImageURL("patio-fixed-frame-x") },
+      options: { imageURL: frameXImg },
     },
     {
       id: "bottom-frame",
       mixedRect: { y: "bottom", height: 35, xFactor: 0, widthFactor: 1 },
-      options: { imageURL: getImageURL("patio-fixed-frame-x"), flipVertical: true },
-    },
-    {
-      id: "left-frame",
-      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: getImageURL("patio-fixed-frame-y") },
-    },
-    {
-      id: "right-frame",
-      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: getImageURL("patio-fixed-frame-y"), flipHorizontal: true },
-    },
-    {
-      id: "top-left",
-      rect: { x: 0, y: 0, width: 35, height: 35 },
-      options: { imageURL: getImageURL("patio-fixed-corner") },
-    },
-    {
-      id: "top-right",
-      rect: { x: "right", y: 0, width: 35, height: 35 },
-      options: { imageURL: getImageURL("patio-fixed-corner"), flipHorizontal: true },
-    },
-    {
-      id: "bottom-left",
-      rect: { x: 0, y: "bottom", width: 35, height: 35 },
-      options: { imageURL: getImageURL("patio-fixed-corner"), flipVertical: true },
-    },
-    {
-      id: "bottom-right",
-      rect: { x: "right", y: "bottom", width: 35, height: 35 },
-      options: {
-        imageURL: getImageURL("patio-fixed-corner"),
-        flipVertical: true,
-        flipHorizontal: true,
-      },
+      options: { imageURL: frameXImg, flipVertical: true },
     },
   ];
 
-  const frameMask = buildMoldingMask(
-    { elements: frameElements },
-    targetWidth,
-    targetHeight
-  );
+  // Left vertical stile — omitted when this edge slides behind the adjacent panel
+  if (hiddenEdge !== "left") {
+    frameElements.push({
+      id: "left-frame",
+      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
+      options: { imageURL: frameYImg },
+    });
+  }
+
+  // Right vertical stile — omitted when this edge slides behind the adjacent panel
+  if (hiddenEdge !== "right") {
+    frameElements.push({
+      id: "right-frame",
+      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
+      options: { imageURL: frameYImg, flipHorizontal: true },
+    });
+  }
+
+  // Corners: only add on sides that have a visible stile
+  if (hiddenEdge !== "left") {
+    frameElements.push({
+      id: "top-left",
+      rect: { x: 0, y: 0, width: 35, height: 35 },
+      options: { imageURL: cornerImg },
+    });
+    frameElements.push({
+      id: "bottom-left",
+      rect: { x: 0, y: "bottom", width: 35, height: 35 },
+      options: { imageURL: cornerImg, flipVertical: true },
+    });
+  }
+  if (hiddenEdge !== "right") {
+    frameElements.push({
+      id: "top-right",
+      rect: { x: "right", y: 0, width: 35, height: 35 },
+      options: { imageURL: cornerImg, flipHorizontal: true },
+    });
+    frameElements.push({
+      id: "bottom-right",
+      rect: { x: "right", y: "bottom", width: 35, height: 35 },
+      options: { imageURL: cornerImg, flipVertical: true, flipHorizontal: true },
+    });
+  }
+
+  const frameMask = buildMoldingMask({ elements: frameElements }, targetWidth, targetHeight);
   const frameCanvas = await applyFinishToElementGroup({
     width: targetWidth,
     height: targetHeight,
@@ -1311,34 +1323,34 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
 
   finalCtx.drawImage(frameCanvas, 0, 0);
 
-  // Step 3: Simple clear glass effect (no decorative glazing patterns)
+  // Step 3: Clear glass — fills from frame inner edge, extending to the raw panel edge on the
+  // hidden side so the panel appears to slide behind the adjacent fixed frame.
   const glazeImg = await loadImage(getImageURL("clear"));
   if (glazeImg) {
-    const margin = 40; // Inside the frame
-    const glassWidth = targetWidth - (margin * 2);
-    const glassHeight = targetHeight - (margin * 2);
-
-    finalCtx.globalAlpha = 0.3;
-    finalCtx.drawImage(glazeImg, margin, margin, glassWidth, glassHeight);
-    finalCtx.globalAlpha = 1.0;
+    const f = 35; // frame thickness
+    const glassX = hiddenEdge === "left"  ? 0            : f;
+    const glassY = f;
+    const glassW = hiddenEdge === "left"  ? targetWidth - f
+                 : hiddenEdge === "right" ? targetWidth - f
+                 : targetWidth - f * 2;
+    const glassH = targetHeight - f * 2;
+    finalCtx.drawImage(glazeImg, glassX, glassY, glassW, glassH);
   }
 
-  // Step 4: Patio handle — always uses patio.png, positioned at the outer edge of the sliding panel
+  // Step 4: Patio handle — always patio.png, at the outer edge of the sliding panel
   if (showHandle) {
     const handleImg = await loadImage(getImageURL("patio"));
     if (handleImg) {
-      // Display dimensions scaled from 476×847 source image
-      const hW = 50;
-      const hH = 89;
-      const hOffsetX = 10; // distance from panel edge
+      const hW = 38;
+      const hH = 67;
+      const hOffsetX = 19;
       const hX = handleOnLeft ? hOffsetX : targetWidth - hW - hOffsetX;
-      const hY = (targetHeight - hH) / 2; // centred vertically
+      const hY = (targetHeight - hH) / 2;
 
       const tintedHandle = tintImage(handleImg, hardwareColorMap[state.selectedHardwareColor] || "#000");
 
       finalCtx.save();
       if (handleOnLeft) {
-        // Mirror so the D-grip opens toward the panel interior
         finalCtx.translate(hX + hW / 2, hY + hH / 2);
         finalCtx.scale(-1, 1);
         finalCtx.drawImage(tintedHandle, -hW / 2, -hH / 2, hW, hH);
@@ -1347,7 +1359,6 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
       }
       finalCtx.restore();
 
-      // Multiply shading pass
       finalCtx.globalCompositeOperation = "multiply";
       finalCtx.save();
       if (handleOnLeft) {
@@ -1368,42 +1379,106 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
 async function renderPatioDoor() {
   const config = state.selectedConfiguration;
   const { displayPixels } = getDoorPanelDimensionsFromInput();
+  const isInternal = state.currentView === "internal";
 
-  // Determine panel count and which panels are opening (have handles)
-  // openingPanels: { [panelIndex]: { handleOnLeft: bool } }
-  // X = open/sliding panel, O = fixed panel
+  // Per-panel data:
+  //   openingPanels[i]   = { handleOnLeft: bool }  (undefined = fixed panel)
+  //   panelIsOpening[i]  = bool
+  //   panelHiddenEdge[i] = "left" | "right" | null
+  //
+  // External: the opening panel hides its inner edge (opposite to handle) because it
+  //           slides behind the adjacent fixed panel at that point.
+  // Internal (pre-mirror): the fixed panel hides its edge that is adjacent to the
+  //           opening panel, because from inside that edge is obscured by the overlap.
   let numPanels = 2;
-  const openingPanels = {};
+  const openingPanels  = {};
+  const panelIsOpening = {};
+  const panelHiddenEdge = {};
 
   if (config === "patio-2-right") {
-    // O | X  —  right panel slides LEFT into O; handle on outer (right) edge
+    // O | X — X slides LEFT; handle on outer (right) edge of X
     numPanels = 2;
-    openingPanels[1] = { handleOnLeft: false };
+    openingPanels[1]  = { handleOnLeft: false };
+    panelIsOpening[1] = true;
+    if (!isInternal) {
+      panelHiddenEdge[1] = "left";   // X: inner (left) edge hidden externally
+    } else {
+      panelHiddenEdge[0] = "right";  // O: right edge hidden internally (pre-mirror)
+    }
+
   } else if (config === "patio-2-left") {
-    // X | O  —  left panel slides RIGHT into O; handle on outer (left) edge
+    // X | O — X slides RIGHT; handle on outer (left) edge of X
     numPanels = 2;
-    openingPanels[0] = { handleOnLeft: true };
+    openingPanels[0]  = { handleOnLeft: true };
+    panelIsOpening[0] = true;
+    if (!isInternal) {
+      panelHiddenEdge[0] = "right";  // X: inner (right) edge hidden externally
+    } else {
+      panelHiddenEdge[1] = "left";   // O: left edge hidden internally (pre-mirror)
+    }
+
   } else if (config === "patio-3panel") {
-    // O | X | O  —  middle panel slides; handle on side AWAY from the panel it slides into
-    // handleSide "left" means door slides right → handle on left outer edge
-    // handleSide "right" means door slides left → handle on right outer edge
+    // O | X | O — middle panel slides; direction determined by handleSide
     numPanels = 3;
-    openingPanels[1] = { handleOnLeft: state.handleSide === "left" };
+    openingPanels[1]  = { handleOnLeft: state.handleSide === "left" };
+    panelIsOpening[1] = true;
+    if (state.handleSide === "left") {
+      // X slides RIGHT → right edge of X is inner
+      if (!isInternal) {
+        panelHiddenEdge[1] = "right";  // X: right edge hidden externally
+      } else {
+        panelHiddenEdge[2] = "left";   // right O: left edge hidden internally
+      }
+    } else {
+      // X slides LEFT → left edge of X is inner
+      if (!isInternal) {
+        panelHiddenEdge[1] = "left";   // X: left edge hidden externally
+      } else {
+        panelHiddenEdge[0] = "right";  // left O: right edge hidden internally
+      }
+    }
+
   } else if (config === "patio-4panel") {
-    // O | X | X | O  —  inner two panels slide outward to their respective fixed panels
-    // Panel 1 slides LEFT into panel 0 → handle on right (outer) edge
-    // Panel 2 slides RIGHT into panel 3 → handle on left (outer) edge
+    // O | X | X | O — inner two panels slide outward
     numPanels = 4;
-    openingPanels[1] = { handleOnLeft: false };
-    openingPanels[2] = { handleOnLeft: true };
+    openingPanels[1]  = { handleOnLeft: false };  // slides LEFT, handle on right
+    openingPanels[2]  = { handleOnLeft: true };   // slides RIGHT, handle on left
+    panelIsOpening[1] = true;
+    panelIsOpening[2] = true;
+    if (!isInternal) {
+      panelHiddenEdge[1] = "left";   // X1: left edge hidden (slides into O at index 0)
+      panelHiddenEdge[2] = "right";  // X2: right edge hidden (slides into O at index 3)
+    } else {
+      panelHiddenEdge[0] = "right";  // O1: right edge hidden internally
+      panelHiddenEdge[3] = "left";   // O2: left edge hidden internally
+    }
   }
 
-  const totalWidth = displayPixels.width;
+  const totalWidth  = displayPixels.width;
   const totalHeight = displayPixels.height;
-  const panelWidth = totalWidth / numPanels;
+
+  // Opening panels are one frame-width (35px) narrower than fixed panels.
+  // Distribute the total width so all panels sum correctly:
+  //   fixedWidth * numPanels - 35 * numOpening = totalWidth
+  const numOpening  = Object.keys(openingPanels).length;
+  const fixedWidth  = Math.round((totalWidth + 35 * numOpening) / numPanels);
+  const openingWidth = fixedWidth - 35;
+
+  // Build per-panel widths and cumulative x offsets
+  const panelWidths = [];
+  for (let i = 0; i < numPanels; i++) {
+    // The panel with a hidden edge is always the narrower one:
+    // externally = the opening panel (slides behind fixed frame);
+    // internally = the fixed panel the opening slides in front of.
+    panelWidths.push((panelHiddenEdge[i] != null) ? openingWidth : fixedWidth);
+  }
+  const panelOffsets = panelWidths.reduce((acc, w, i) => {
+    acc.push(i === 0 ? 0 : acc[i - 1] + panelWidths[i - 1]);
+    return acc;
+  }, []);
 
   const previewCanvas = document.getElementById("previewCanvas");
-  previewCanvas.width = totalWidth;
+  previewCanvas.width  = totalWidth;
   previewCanvas.height = totalHeight;
 
   const ctx = previewCanvas.getContext("2d");
@@ -1412,23 +1487,20 @@ async function renderPatioDoor() {
   const frameFinish = getCurrentFrameFinish();
 
   for (let i = 0; i < numPanels; i++) {
-    const x = i * panelWidth;
-    const panelInfo = openingPanels[i];
-    const showHandle = !!panelInfo;
-    const handleOnLeft = panelInfo?.handleOnLeft ?? false;
+    const panelInfo      = openingPanels[i];
+    const showHandle     = !!panelInfo;
+    const handleOnLeft   = panelInfo?.handleOnLeft ?? false;
+    const isOpeningPanel = panelIsOpening[i] ?? false;
+    const hiddenEdge     = panelHiddenEdge[i] ?? null;
 
     const panelCanvas = await buildPatioDoorPanel(
-      panelWidth,
-      totalHeight,
-      frameFinish,
-      showHandle,
-      handleOnLeft
+      panelWidths[i], totalHeight, frameFinish,
+      showHandle, handleOnLeft, isOpeningPanel, hiddenEdge
     );
-
-    ctx.drawImage(panelCanvas, x, 0);
+    ctx.drawImage(panelCanvas, panelOffsets[i], 0);
   }
 
-  if (state.currentView === "internal") {
+  if (isInternal) {
     mirrorCanvas(previewCanvas);
   }
 }
