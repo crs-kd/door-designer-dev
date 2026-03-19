@@ -1254,14 +1254,16 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
 
   const framePrefix    = isOpeningPanel ? "patio-open" : "patio-fixed";
   const cornerImg      = getImageURL(`${framePrefix}-corner`);
+  const cornerEdgeImg  = getImageURL(`${framePrefix}-corner-edge`);
   const frameXImg      = getImageURL(`${framePrefix}-frame-x`);
   const frameYImg      = getImageURL(`${framePrefix}-frame-y`);
   const frameYEdgeImg  = getImageURL(`${framePrefix}-frame-y-edge`);
 
-  // Which image to use for each vertical stile:
-  // outer boundary of the whole door → frame-y; touching another panel → frame-y-edge
+  // Outer boundary of the whole door → regular image; touching another panel → edge variant
   const leftStileImg  = leftIsInner  ? frameYEdgeImg : frameYImg;
   const rightStileImg = rightIsInner ? frameYEdgeImg : frameYImg;
+  const leftCornerImg  = leftIsInner  ? cornerEdgeImg : cornerImg;
+  const rightCornerImg = rightIsInner ? cornerEdgeImg : cornerImg;
 
   // Top and bottom rails are always present
   const frameElements = [
@@ -1300,24 +1302,24 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
     frameElements.push({
       id: "top-left",
       rect: { x: 0, y: 0, width: PATIO_FRAME_PX, height: PATIO_FRAME_PX },
-      options: { imageURL: cornerImg },
+      options: { imageURL: leftCornerImg },
     });
     frameElements.push({
       id: "bottom-left",
       rect: { x: 0, y: "bottom", width: PATIO_FRAME_PX, height: PATIO_FRAME_PX },
-      options: { imageURL: cornerImg, flipVertical: true },
+      options: { imageURL: leftCornerImg, flipVertical: true },
     });
   }
   if (hiddenEdge !== "right") {
     frameElements.push({
       id: "top-right",
       rect: { x: "right", y: 0, width: PATIO_FRAME_PX, height: PATIO_FRAME_PX },
-      options: { imageURL: cornerImg, flipHorizontal: true },
+      options: { imageURL: rightCornerImg, flipHorizontal: true },
     });
     frameElements.push({
       id: "bottom-right",
       rect: { x: "right", y: "bottom", width: PATIO_FRAME_PX, height: PATIO_FRAME_PX },
-      options: { imageURL: cornerImg, flipVertical: true, flipHorizontal: true },
+      options: { imageURL: rightCornerImg, flipVertical: true, flipHorizontal: true },
     });
   }
 
@@ -1352,7 +1354,7 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
     if (handleImg) {
       const hW = 38;
       const hH = 67;
-      const hOffsetX = 19;
+      const hOffsetX = 24;
       const hX = handleOnLeft ? hOffsetX : targetWidth - hW - hOffsetX;
       const hY = (targetHeight - hH) / 2;
 
