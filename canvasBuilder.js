@@ -1238,7 +1238,7 @@ function parseConfigurationFlags(configValue) {
    Patio doors are built like sidescreens: frame + glass only.
    No complex panel, molding, or decorative glazing options.
 */
-async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showHandle = false, handleOnLeft = false, isOpeningPanel = false, hiddenEdge = null) {
+async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showHandle = false, handleOnLeft = false, isOpeningPanel = false, hiddenEdge = null, leftIsInner = false, rightIsInner = false) {
   const finalCanvas = document.createElement("canvas");
   finalCanvas.width = targetWidth;
   finalCanvas.height = targetHeight;
@@ -1249,21 +1249,30 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
   finalCtx.fillRect(0, 0, targetWidth, targetHeight);
 
   // Step 2: Frame — opening panels use patio-open-* images, fixed panels use patio-fixed-*
-  const framePrefix = isOpeningPanel ? "patio-open" : "patio-fixed";
-  const cornerImg  = getImageURL(`${framePrefix}-corner`);
-  const frameXImg  = getImageURL(`${framePrefix}-frame-x`);
-  const frameYImg  = getImageURL(`${framePrefix}-frame-y`);
+  // Frame thickness: original 35px + ~1/6 extra for the outer edge on the new images ≈ 41px.
+  const PATIO_FRAME_PX = 41;
+
+  const framePrefix    = isOpeningPanel ? "patio-open" : "patio-fixed";
+  const cornerImg      = getImageURL(`${framePrefix}-corner`);
+  const frameXImg      = getImageURL(`${framePrefix}-frame-x`);
+  const frameYImg      = getImageURL(`${framePrefix}-frame-y`);
+  const frameYEdgeImg  = getImageURL(`${framePrefix}-frame-y-edge`);
+
+  // Which image to use for each vertical stile:
+  // outer boundary of the whole door → frame-y; touching another panel → frame-y-edge
+  const leftStileImg  = leftIsInner  ? frameYEdgeImg : frameYImg;
+  const rightStileImg = rightIsInner ? frameYEdgeImg : frameYImg;
 
   // Top and bottom rails are always present
   const frameElements = [
     {
       id: "top-frame",
-      mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: 0, height: PATIO_FRAME_PX, xFactor: 0, widthFactor: 1 },
       options: { imageURL: frameXImg },
     },
     {
       id: "bottom-frame",
-      mixedRect: { y: "bottom", height: 35, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: "bottom", height: PATIO_FRAME_PX, xFactor: 0, widthFactor: 1 },
       options: { imageURL: frameXImg, flipVertical: true },
     },
   ];
@@ -1272,8 +1281,8 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
   if (hiddenEdge !== "left") {
     frameElements.push({
       id: "left-frame",
-      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: frameYImg },
+      mixedRect: { x: 0, width: PATIO_FRAME_PX, yFactor: 0, heightFactor: 1 },
+      options: { imageURL: leftStileImg },
     });
   }
 
@@ -1281,8 +1290,8 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
   if (hiddenEdge !== "right") {
     frameElements.push({
       id: "right-frame",
-      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: frameYImg, flipHorizontal: true },
+      mixedRect: { x: "right", width: PATIO_FRAME_PX, yFactor: 0, heightFactor: 1 },
+      options: { imageURL: rightStileImg, flipHorizontal: true },
     });
   }
 
@@ -1290,24 +1299,24 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
   if (hiddenEdge !== "left") {
     frameElements.push({
       id: "top-left",
-      rect: { x: 0, y: 0, width: 35, height: 35 },
+      rect: { x: 0, y: 0, width: PATIO_FRAME_PX, height: PATIO_FRAME_PX },
       options: { imageURL: cornerImg },
     });
     frameElements.push({
       id: "bottom-left",
-      rect: { x: 0, y: "bottom", width: 35, height: 35 },
+      rect: { x: 0, y: "bottom", width: PATIO_FRAME_PX, height: PATIO_FRAME_PX },
       options: { imageURL: cornerImg, flipVertical: true },
     });
   }
   if (hiddenEdge !== "right") {
     frameElements.push({
       id: "top-right",
-      rect: { x: "right", y: 0, width: 35, height: 35 },
+      rect: { x: "right", y: 0, width: PATIO_FRAME_PX, height: PATIO_FRAME_PX },
       options: { imageURL: cornerImg, flipHorizontal: true },
     });
     frameElements.push({
       id: "bottom-right",
-      rect: { x: "right", y: "bottom", width: 35, height: 35 },
+      rect: { x: "right", y: "bottom", width: PATIO_FRAME_PX, height: PATIO_FRAME_PX },
       options: { imageURL: cornerImg, flipVertical: true, flipHorizontal: true },
     });
   }
@@ -1327,7 +1336,7 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
   // hidden side so the panel appears to slide behind the adjacent fixed frame.
   const glazeImg = await loadImage(getImageURL("clear"));
   if (glazeImg) {
-    const f = 35; // frame thickness
+    const f = PATIO_FRAME_PX; // frame thickness
     const glassX = hiddenEdge === "left"  ? 0            : f;
     const glassY = f;
     const glassW = hiddenEdge === "left"  ? targetWidth - f
@@ -1459,10 +1468,13 @@ async function renderPatioDoor() {
 
   // Opening panels are one frame-width (35px) narrower than fixed panels.
   // Distribute the total width so all panels sum correctly:
-  //   fixedWidth * numPanels - 35 * numOpening = totalWidth
-  const numOpening  = Object.keys(openingPanels).length;
-  const fixedWidth  = Math.round((totalWidth + 35 * numOpening) / numPanels);
-  const openingWidth = fixedWidth - 35;
+  // Opening panels are one patio-frame-width narrower than fixed panels.
+  // Must match PATIO_FRAME_PX inside buildPatioDoorPanel (41px).
+  const PATIO_FRAME_PX = 41;
+  //   fixedWidth * numPanels - PATIO_FRAME_PX * numOpening = totalWidth
+  const numOpening   = Object.keys(openingPanels).length;
+  const fixedWidth   = Math.round((totalWidth + PATIO_FRAME_PX * numOpening) / numPanels);
+  const openingWidth = fixedWidth - PATIO_FRAME_PX;
 
   // Build per-panel widths and cumulative x offsets
   const panelWidths = [];
@@ -1493,9 +1505,14 @@ async function renderPatioDoor() {
     const isOpeningPanel = panelIsOpening[i] ?? false;
     const hiddenEdge     = panelHiddenEdge[i] ?? null;
 
+    // Inner stile = any stile that touches another panel (not the outer boundary of the door)
+    const leftIsInner  = i > 0;
+    const rightIsInner = i < numPanels - 1;
+
     const panelCanvas = await buildPatioDoorPanel(
       panelWidths[i], totalHeight, frameFinish,
-      showHandle, handleOnLeft, isOpeningPanel, hiddenEdge
+      showHandle, handleOnLeft, isOpeningPanel, hiddenEdge,
+      leftIsInner, rightIsInner
     );
     ctx.drawImage(panelCanvas, panelOffsets[i], 0);
   }
