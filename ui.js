@@ -259,7 +259,16 @@ function populateGlazingThumbnails() {
 }
 
 function populateLetterplateThumbnails() {
+  const section   = document.getElementById("letterplate-section");
   const container = document.getElementById("letterplate-list");
+
+  if (state.doorType === "patio") {
+    if (section) section.style.display = "none";
+    container.innerHTML = "";
+    return;
+  }
+  if (section) section.style.display = "";
+
   const styleObj = doorStyles.find(s => s.name === state.selectedStyle);
   if (!styleObj || !styleObj.letterplateOptions) {
     container.innerHTML = "";
@@ -295,6 +304,17 @@ function populateHardwareColorThumbnails() {
 
 function populateHandleThumbnails() {
   const container = document.getElementById("handle-list");
+
+  if (state.doorType === "patio") {
+    container.innerHTML = `
+      <div class="thumbnail selected" data-type="handle" data-value="patio">
+        <img src="${getImageURL("patio-thumb")}" alt="Patio Handle">
+        <p>Patio Handle</p>
+      </div>`;
+    addThumbnailClick("handle");
+    return;
+  }
+
   container.innerHTML = handleOptions.map(h => `
     <div class="thumbnail" data-type="handle" data-value="${h}">
       <img src="${getImageURL(h + "-thumb")}" alt="${handleDisplayNames[h]}">
