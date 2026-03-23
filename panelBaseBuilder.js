@@ -55,7 +55,7 @@ export async function drawGrooves(ctx, width, height, textureDef) {
 
     const grooveMarginX = marginX * 0.4;
     const grooveDrawW   = width - grooveMarginX * 2;  // span full inner width
-    const grooveThick   = nW * (innerH / nH) * 0.025;  // same reference as vertical for consistent weight
+    const grooveThick   = nW * (innerH / nH) * 0.018;  // same reference as vertical for consistent weight
 
     // Centre the fixed-pitch group within the inner height
     const totalSpan    = (count - 1) * grooveSpacing;

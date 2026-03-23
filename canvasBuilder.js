@@ -143,7 +143,7 @@ async function applyFinishToElementGroup({
  */
 function drawFrameEdgeLighting(ctx, w, h, frameTop = 35, frameBottom = 17, frameSide = 35) {
   const reach       = 10;   // px — how far shadows/highlights bleed into the panel
-  const hiAlpha     = 0.28; // highlight intensity
+  const hiAlpha     = 0.06; // highlight intensity
   const shAlpha     = 0.22; // primary shadow intensity
   const shAlphaSub  = 0.09; // secondary (counter-side) shadow intensity
 
