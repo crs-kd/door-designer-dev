@@ -603,7 +603,7 @@ const textureDefs = [
   { id: "none" },
   {
     id: "horizontal",
-    count: 17,     // 12 groove lines (pre-made panel, fixed pitch)
+    count: 16,     // 16 groove lines (pre-made panel, fixed pitch)
     marginX: 35,
     marginY: 35,
   },
@@ -1926,7 +1926,7 @@ const handleDefs = [
     width: 35,
     height: 65,
     align: "right", // visual alignment (used for positioning from panel edge)
-    offsetX: 21,
+    offsetX: 22,
     offsetY: 250,
     side: "right", // logical side it belongs on; use this to place hinge on the opposite side
     mirrorWhenLeft: true, // whether to mirror the image when used on the left
