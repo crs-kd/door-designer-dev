@@ -600,22 +600,18 @@ const internalFinishMap = {
 // Separate definitions for style-based assets
 // 1) Textures
 const textureDefs = [
-  { id: "none", image: null },
+  { id: "none" },
   {
     id: "horizontal",
-    image: "allure-horizontal",
-    marginX: 35,
-    marginY: 10,
-    offsetX: 0,
-    offsetY: -3,
+    count: 6,      // 6 groove lines = 7 equal sections
+    marginX: 35,   // inner area left/right margin (matches frame thickness)
+    marginY: 35,   // inner area top/bottom margin
   },
   {
     id: "vertical",
-    image: "allure-vertical",
+    count: 6,
     marginX: 35,
-    marginY: 28,
-    offsetX: 0,
-    offsetY: 5,
+    marginY: 35,
   },
 ];
 

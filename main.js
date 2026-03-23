@@ -22,10 +22,14 @@ function updateStepMenuAccessibility() {
 }
 
 function showStep(index) {
-  // All steps are always visible; just highlight the menu item and scroll to the section
-  updateStepMenu(index);
+  // Hide every step, then reveal only the active one
+  stepIDs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
   const activeStep = document.getElementById(stepIDs[index]);
-  if (activeStep) activeStep.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (activeStep) activeStep.style.display = "block";
+  updateStepMenu(index);
 }
 
 function updateStepMenu(idx) {

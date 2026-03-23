@@ -6,7 +6,7 @@ import {
   getDoorPanelDimensionsFromInput,
   getSidescreenDimensionsFromInput,
 } from "./utils.js";
-import { createBasePanel } from "./panelBaseBuilder.js";
+import { createBasePanel, drawGrooves } from "./panelBaseBuilder.js";
 import { composeElementGroup } from "./elementGroupBuilder.js";
 import { buildMoldingMask } from "./utils.js";
 
@@ -705,17 +705,12 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
     }
   }
 
-  // Step 3: Groove
+  // Step 3: Groove (procedural)
   const grooveTextureId = doorStyles.find((s) => s.name === state.selectedStyle)
     ?.styleAssets?.texture;
   const grooveDef = textureDefs.find((t) => t.id === grooveTextureId);
-  if (grooveDef && grooveDef.image) {
-    const grooveImg = await loadImage(getImageURL(grooveDef.image));
-    if (grooveImg) {
-      finalCtx.globalCompositeOperation = "multiply";
-      finalCtx.drawImage(grooveImg, 0, 0, targetWidth, targetHeight);
-      finalCtx.globalCompositeOperation = "source-over";
-    }
+  if (grooveDef) {
+    await drawGrooves(finalCtx, targetWidth, targetHeight, grooveDef);
   }
 
   // lighting overlay
@@ -2155,12 +2150,12 @@ function populateStartDoorTypeThumbnails() {
           document.getElementById("doorHeightInput").value = 2100;
           applyPatioConfigLimits("patio-2-right");
 
-          // Hide panel and glazing steps for patio doors
+          // Hide panel, glazing and sidescreen steps for patio doors
           document.getElementById("panelMenuItem").style.display = "none";
           document.getElementById("glazingMenuItem").style.display = "none";
-          document.getElementById("style-step").style.display = "none";
-          document.getElementById("glazing-step").style.display = "none";
+          document.getElementById("sidescreenMenuItem").style.display = "none";
 
+          updateConfigurationOptionVisibility(); // hides sidescreen menu item
           updateDoorTypeControls();
         } else {
           state.selectedConfiguration = "single";
@@ -2174,11 +2169,10 @@ function populateStartDoorTypeThumbnails() {
           hInput.min = 0;
           hInput.max = 5000;
 
-          // Show panel and glazing steps for single doors
+          // Restore panel, glazing and sidescreen menu items for single doors
           document.getElementById("panelMenuItem").style.display = "inline-block";
           document.getElementById("glazingMenuItem").style.display = "inline-block";
-          document.getElementById("style-step").style.display = "block";
-          document.getElementById("glazing-step").style.display = "block";
+          document.getElementById("sidescreenMenuItem").style.display = "";
 
           updateDoorTypeControls();
         }

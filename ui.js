@@ -190,7 +190,7 @@ function populateExternalFinishThumbnails() {
     </div>
   `).join("");
 
-  container.innerHTML = `<h3>External Colour</h3>${html}`;
+  container.innerHTML = `<h3 class="collection-title">External Colour</h3>${html}`;
   addThumbnailClick("externalColour");
 }
 
@@ -208,7 +208,7 @@ function populateInternalFinishThumbnails() {
       </div>
     `).join("");
 
-  container.innerHTML = `<h3>Internal Colour</h3>${html}`;
+  container.innerHTML = `<h3 class="collection-title">Internal Colour</h3>${html}`;
   addThumbnailClick("internalColour");
 }
 
@@ -225,6 +225,7 @@ function populateGlazingThumbnails() {
   // --- Door Glazing ---
   if (allowedGlazingIds.length > 0) {
     const doorHeader = document.createElement("h3");
+    doorHeader.className = "collection-title";
     doorHeader.textContent = "Door Glazing";
     container.appendChild(doorHeader);
 
@@ -243,6 +244,7 @@ function populateGlazingThumbnails() {
 
   // --- Sidescreen / Fanlight Glazing ---
   const ssHeader = document.createElement("h3");
+  ssHeader.className = "collection-title";
   ssHeader.textContent = "Sidescreen / Fanlight Glazing";
   container.appendChild(ssHeader);
 
