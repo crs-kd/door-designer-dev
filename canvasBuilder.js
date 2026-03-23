@@ -806,42 +806,42 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
   const frameElements = [
     {
       id: "top-frame",
-      mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: 0, height: 35 * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL("frame-x") },
     },
     {
       id: "bottom-frame",
-      mixedRect: { y: "bottom", height: 35, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: "bottom", height: 35 * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL("frame-x"), flipVertical: true },
     },
     {
       id: "left-frame",
-      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: 0, width: 35 * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame-y") },
     },
     {
       id: "right-frame",
-      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: "right", width: 35 * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame-y"), flipHorizontal: true },
     },
     {
       id: "top-left",
-      rect: { x: 0, y: 0, width: 35, height: 35 },
+      rect: { x: 0, y: 0, width: 35 * RS, height: 35 * RS },
       options: { imageURL: getImageURL("frame-corner") },
     },
     {
       id: "top-right",
-      rect: { x: "right", y: 0, width: 35, height: 35 },
+      rect: { x: "right", y: 0, width: 35 * RS, height: 35 * RS },
       options: { imageURL: getImageURL("frame-corner"), flipHorizontal: true },
     },
     {
       id: "bottom-left",
-      rect: { x: 0, y: "bottom", width: 35, height: 35 },
+      rect: { x: 0, y: "bottom", width: 35 * RS, height: 35 * RS },
       options: { imageURL: getImageURL("frame-corner"), flipVertical: true },
     },
     {
       id: "bottom-right",
-      rect: { x: "right", y: "bottom", width: 35, height: 35 },
+      rect: { x: "right", y: "bottom", width: 35 * RS, height: 35 * RS },
       options: {
         imageURL: getImageURL("frame-corner"),
         flipVertical: true,
@@ -1150,6 +1150,7 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
 */
 
 async function buildFanlightComposite(targetWidth, targetHeight, frameFinish, finish) {
+  const RS = RENDER_SCALE;
   const baseColor = frameFinish.color || "#ccc";
   const textureURL = frameFinish.texture || null;
   const textureBlend = frameFinish.textureBlend || "source-over";
@@ -1177,42 +1178,42 @@ async function buildFanlightComposite(targetWidth, targetHeight, frameFinish, fi
   const frameElements = [
     {
       id: "top-frame",
-      mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: 0, height: 35 * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL("frame-x") },
     },
     {
       id: "bottom-frame",
-      mixedRect: { y: "bottom", height: 35, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: "bottom", height: 35 * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL("frame-x"), flipVertical: true },
     },
     {
       id: "left-frame",
-      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: 0, width: 35 * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame-y") },
     },
     {
       id: "right-frame",
-      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: "right", width: 35 * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame-y"), flipHorizontal: true },
     },
     {
       id: "top-left",
-      rect: { x: 0, y: 0, width: 35, height: 35 },
+      rect: { x: 0, y: 0, width: 35 * RS, height: 35 * RS },
       options: { imageURL: getImageURL("frame-corner") },
     },
     {
       id: "top-right",
-      rect: { x: "right", y: 0, width: 35, height: 35 },
+      rect: { x: "right", y: 0, width: 35 * RS, height: 35 * RS },
       options: { imageURL: getImageURL("frame-corner"), flipHorizontal: true },
     },
     {
       id: "bottom-left",
-      rect: { x: 0, y: "bottom", width: 35, height: 35 },
+      rect: { x: 0, y: "bottom", width: 35 * RS, height: 35 * RS },
       options: { imageURL: getImageURL("frame-corner"), flipVertical: true },
     },
     {
       id: "bottom-right",
-      rect: { x: "right", y: "bottom", width: 35, height: 35 },
+      rect: { x: "right", y: "bottom", width: 35 * RS, height: 35 * RS },
       options: {
         imageURL: getImageURL("frame-corner"),
         flipVertical: true,
