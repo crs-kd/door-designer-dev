@@ -28,36 +28,47 @@ export async function drawGrooves(ctx, width, height, textureDef) {
   ctx.globalCompositeOperation = "multiply";
 
   if (textureDef.id === "vertical") {
-    // Groove runs top-to-bottom.
-    // Preserve the image's aspect ratio against the inner height.
-    const grooveDrawH = innerH;
-    const grooveDrawW = nW * (innerH / nH);
-    const sectionW    = innerW / (count + 1);
+    // Fixed groove geometry — the panel is pre-made so spacing never reflows.
+    const grooveSpacing = 34;   // px between groove centres (fixed, ~120 mm at door scale)
+    const lipTrim       = 10;    // px trimmed from the bottom for the lip overlay
 
-    for (let i = 1; i <= count; i++) {
-      const cx = marginX + i * sectionW;
+    const grooveMarginY = marginY * 0.4;
+    const grooveStartY  = grooveMarginY;
+    const grooveDrawH   = height - grooveMarginY * 2 - lipTrim;
+    const grooveDrawW   = nW * (grooveDrawH / nH) * 0.018;
+
+    // Centre the fixed-pitch group within the inner width
+    const totalSpan  = (count - 1) * grooveSpacing;
+    const firstCentreX = marginX + (innerW - totalSpan) / 2;
+
+    for (let i = 0; i < count; i++) {
+      const cx = firstCentreX + i * grooveSpacing;
       ctx.drawImage(grooveImg,
-        cx - grooveDrawW / 2, marginY,
+        cx - grooveDrawW / 2, grooveStartY,
         grooveDrawW, grooveDrawH
       );
     }
 
   } else if (textureDef.id === "horizontal") {
-    // Groove runs left-to-right.
-    // Rotate the groove image 90° so the line spans horizontally.
-    // After ctx.rotate(+90°):  local-x → screen-y,  local-y → screen-x (mirrored)
-    // Draw: local-x = groove thickness (screen height), local-y = innerW (screen width).
-    const grooveThick = nW * (innerW / nH);  // thickness scales with inner width
-    const sectionH    = innerH / (count + 1);
+    // Fixed groove geometry — spacing never reflows with panel height.
+    const grooveSpacing = 34;   // px between groove centres (matches vertical pitch)
 
-    for (let i = 1; i <= count; i++) {
-      const cy = marginY + i * sectionH;
+    const grooveMarginX = marginX * 0.4;
+    const grooveDrawW   = width - grooveMarginX * 2;  // span full inner width
+    const grooveThick   = nW * (innerH / nH) * 0.025;  // same reference as vertical for consistent weight
+
+    // Centre the fixed-pitch group within the inner height
+    const totalSpan    = (count - 1) * grooveSpacing;
+    const firstCentreY = marginY + (innerH - totalSpan) / 2;
+
+    for (let i = 0; i < count; i++) {
+      const cy = firstCentreY + i * grooveSpacing;
       ctx.save();
       ctx.translate(marginX + innerW / 2, cy);
       ctx.rotate(Math.PI / 2);
       ctx.drawImage(grooveImg,
-        -grooveThick / 2, -innerW / 2,
-        grooveThick, innerW
+        -grooveThick / 2, -grooveDrawW / 2,
+        grooveThick, grooveDrawW
       );
       ctx.restore();
     }

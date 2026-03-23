@@ -603,9 +603,9 @@ const textureDefs = [
   { id: "none" },
   {
     id: "horizontal",
-    count: 6,      // 6 groove lines = 7 equal sections
-    marginX: 35,   // inner area left/right margin (matches frame thickness)
-    marginY: 35,   // inner area top/bottom margin
+    count: 17,     // 12 groove lines (pre-made panel, fixed pitch)
+    marginX: 35,
+    marginY: 35,
   },
   {
     id: "vertical",
