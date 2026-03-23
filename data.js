@@ -1926,7 +1926,7 @@ const handleDefs = [
     width: 35,
     height: 65,
     align: "right", // visual alignment (used for positioning from panel edge)
-    offsetX: 23,
+    offsetX: 21,
     offsetY: 250,
     side: "right", // logical side it belongs on; use this to place hinge on the opposite side
     mirrorWhenLeft: true, // whether to mirror the image when used on the left
