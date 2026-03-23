@@ -10,6 +10,7 @@ import {
 import { createBasePanel, drawGrooves } from "./panelBaseBuilder.js";
 import { composeElementGroup } from "./elementGroupBuilder.js";
 import { buildMoldingMask } from "./utils.js";
+import { drawShapeMolding } from "./shapeRenderer.js";
 
 import { populateSidescreenStyleThumbnails } from "./ui.js";
 import { populateConfigurationOptions } from "./ui.js";
@@ -429,14 +430,21 @@ const frameElements = JSON.parse(
     }
   }
 
-  // Step 4: Molding
-  const moldingDef = styleObj?.styleAssets?.molding
-    ? moldingDefs.find((m) => m.id === styleObj.styleAssets.molding)
-    : null;
+  // Step 4: Molding(s)
+  // Supports both styleAssets.molding (single string) and styleAssets.moldings (array).
+  const mmToPx = (600 * RENDER_SCALE) / 1980;
+
+  const moldingIds = Array.isArray(styleObj?.styleAssets?.moldings)
+    ? styleObj.styleAssets.moldings
+    : styleObj?.styleAssets?.molding
+    ? [styleObj.styleAssets.molding]
+    : [];
+
+  for (const moldId of moldingIds) {
+  const moldingDef = moldingDefs.find((m) => m.id === moldId);
+  if (!moldingDef) continue;
 
   let moldingElements = [];
-
-  const mmToPx = (600 * RENDER_SCALE) / 1980; // consistent mm-to-px scale used throughout your app
 
   const moldW = Math.round((moldingDef?.width ?? 0) * mmToPx);
   const moldH = Math.round((moldingDef?.height ?? 0) * mmToPx);
@@ -547,7 +555,39 @@ const frameElements = JSON.parse(
     }
   }
 
-  if (moldingElements.length > 0) {
+  // Resolve position (shared by both image-based and shape-based paths)
+  const align = moldingDef.align ?? "center";
+  const verticalAlign = moldingDef.verticalAlign ?? "bottom";
+
+  const moldX =
+    align === "left"
+      ? offsetX
+      : align === "right"
+      ? panelWidth - moldW + offsetX
+      : (panelWidth - moldW) / 2 + offsetX;
+
+  const blockAnchor = moldingDef.blockAnchor ?? "bottom";
+
+  const anchorY =
+    verticalAlign === "top"
+      ? 0
+      : ["center", "centre"].includes(verticalAlign)
+      ? panelHeight / 2
+      : panelHeight;
+
+  const moldY =
+    blockAnchor === "centre"
+      ? anchorY - moldH / 2 + offsetY
+      : blockAnchor === "top"
+      ? anchorY + offsetY
+      : anchorY - moldH + offsetY;
+
+  // Branch: shape elements use the procedural renderer; image elements use composeElementGroup
+  const hasShapeElements = moldingElements.some(el => el.shape);
+
+  if (hasShapeElements) {
+    await drawShapeMolding(finalCtx, { elements: moldingElements }, moldW, moldH, moldX, moldY, finish);
+  } else if (moldingElements.length > 0) {
     const moldingCanvas = await composeElementGroup({
       width: moldW,
       height: moldH,
@@ -559,36 +599,10 @@ const frameElements = JSON.parse(
           ? null
           : buildMoldingMask({ elements: moldingElements }, moldW, moldH),
     });
-
-    const align = moldingDef.align ?? "center";
-    const verticalAlign = moldingDef.verticalAlign ?? "bottom";
-
-    const moldX =
-      align === "left"
-        ? offsetX
-        : align === "right"
-        ? panelWidth - moldW + offsetX
-        : (panelWidth - moldW) / 2 + offsetX;
-
-    const blockAnchor = moldingDef.blockAnchor ?? "bottom";
-
-    const anchorY =
-      verticalAlign === "top"
-        ? 0
-        : ["center", "centre"].includes(verticalAlign)
-        ? panelHeight / 2
-        : panelHeight;
-
-    const moldY =
-      blockAnchor === "centre"
-        ? anchorY - moldH / 2 + offsetY
-        : blockAnchor === "top"
-        ? anchorY + offsetY
-        : anchorY - moldH + offsetY;
-
     finalCtx.drawImage(moldingCanvas, moldX, moldY);
     finalCtx.globalCompositeOperation = "source-over";
   }
+  } // end molding loop
 
   // Step 6: Handle
   if (state.selectedHandle && state.selectedHandle !== "none") {

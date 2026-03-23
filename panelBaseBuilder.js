@@ -54,13 +54,18 @@ export async function drawGrooves(ctx, width, height, textureDef) {
     // Fixed groove geometry — spacing never reflows with panel height.
     const grooveSpacing = 34 * RS;
 
+    // Use separate top/bottom margins to match the actual frame thicknesses
+    const marginTop    = (textureDef.marginTop    ?? textureDef.marginY ?? 35) * RS;
+    const marginBottom = (textureDef.marginBottom ?? textureDef.marginY ?? 35) * RS;
+    const visibleH     = height - marginTop - marginBottom;
+
     const grooveMarginX = marginX * 0.4;
     const grooveDrawW   = width - grooveMarginX * 2;  // span full inner width
-    const grooveThick   = nW * (innerH / nH) * 0.018;  // same reference as vertical for consistent weight
+    const grooveThick   = nW * (visibleH / nH) * 0.018;  // same reference as vertical for consistent weight
 
-    // Centre the fixed-pitch group within the inner height
+    // Centre the fixed-pitch group within the visible panel height
     const totalSpan    = (count - 1) * grooveSpacing;
-    const firstCentreY = marginY + (innerH - totalSpan) / 2;
+    const firstCentreY = marginTop + (visibleH - totalSpan) / 2;
 
     for (let i = 0; i < count; i++) {
       const cy = firstCentreY + i * grooveSpacing;

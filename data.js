@@ -497,6 +497,56 @@ const doorStyles = [
     },
     handleOptions: ["lever"],
   },
+
+  // ── Elegance Collection ──────────────────────────────────────────────────
+  {
+    range: "Lorimer",
+    collection: "Elegance",
+    name: "victorian",
+    minWidth: 733,
+    maxWidth: 1000,
+    minHeight: 1800,
+    maxHeight: 2233,
+    styleAssets: {
+      texture: null,                                         // no grooves
+      moldings: ["victorian-glazing", "victorian-panel"],   // two separate molding blocks
+    },
+    sidescreenOptions: ["full", "midrail", "match-door-style"],
+    glazingLayout: {
+      // Glass fills the arch frame opening.
+      // Arch frame: block top at 40mm, archHeight 160mm, thickness 30mm, radius 130mm.
+      // Arch peak = 40 + (160-130) = 70mm from panel top → glass starts here.
+      // Opening bottom = 40 + 850 - 30 = 860mm → glass ends just inside.
+      width: 260,          // mm — matches inner opening width
+      height: 750,         // mm — fills opening, leaving small margin at bottom
+      offsetX: 0,
+      offsetY: 70,         // mm from panel top (aligns with arch peak)
+      align: "center",
+      blockAnchor: "top",
+      verticalAlign: "top",
+    },
+    glazingOptions: [
+      "clear",
+      "adina",
+      "eden",
+      "graphite",
+      "harmony",
+      "iris",
+      "joy",
+      "murano",
+      "satin",
+      "virtue",
+      "digital",
+      "contora",
+      "charcoal",
+    ],
+    letterplateOptions: {
+      "letterplate-none": "letterplate-none",
+      "letterplate-mid": "letterplate-mid-a",
+      "letterplate-btm": "letterplate-btm-A",
+    },
+    handleOptions: ["lever"],
+  },
 ];
 
 // Configuration choices
@@ -605,7 +655,8 @@ const textureDefs = [
     id: "horizontal",
     count: 16,     // 16 groove lines (pre-made panel, fixed pitch)
     marginX: 35,
-    marginY: 35,
+    marginTop: 35, // matches top frame thickness
+    marginBottom: 17, // matches bottom threshold frame thickness
   },
   {
     id: "vertical",
@@ -1710,6 +1761,71 @@ const moldingDefs = [
           flipHorizontal: false,
           flipVertical: false,
           rotation: 0,
+        },
+      },
+    ],
+  },
+
+  // ── Elegance Collection ──────────────────────────────────────────────────
+
+  /**
+   * victorian-glazing
+   * The top glazing surround with a semicircular arch at the top.
+   * Rendered procedurally via shape.type = "archFrame".
+   * thickness   — molding rail width in mm on all sides
+   * archHeight  — y-position of the arch spring line from the block top, in mm.
+   *               Arch peak = archHeight - (innerWidth/2).  Set to radius+thickness
+   *               so the peak sits one rail-width below the block top edge.
+   */
+  {
+    id: "victorian-glazing",
+    width: 320,           // mm — overall molding block width
+    // height = archHeight (160) + rectangular opening (660) + bottom rail (30) = 850
+    height: 850,
+    align: "center",
+    blockAnchor: "top",
+    verticalAlign: "top",
+    offsetX: 0,
+    offsetY: 40,          // mm from top of panel (just inside the outer frame)
+    elements: [
+      {
+        id: "victorian-arch-frame",
+        rect: { x: 0, y: 0, widthFactor: 1, heightFactor: 1 },
+        shape: {
+          type: "archFrame",
+          thickness: 30,    // mm — molding rail thickness on sides and bottom
+          // archHeight = spring line y from block top.
+          // radius = (320 - 2×30)/2 = 130mm → peak at 160-130 = 30mm from top = 1 rail-width ✓
+          archHeight: 160,
+        },
+      },
+    ],
+  },
+
+  /**
+   * victorian-panel
+   * The lower raised/inset panel with a stepped molding border.
+   * Rendered procedurally via shape.type = "raisedPanel".
+   * steps      — number of nested inset steps
+   * stepWidth  — width of each step in mm
+   */
+  {
+    id: "victorian-panel",
+    width: 580,           // mm — wider than the glazing surround
+    height: 460,          // mm
+    align: "center",
+    blockAnchor: "bottom",
+    verticalAlign: "bottom",
+    offsetX: 0,
+    offsetY: -50,         // mm from bottom of panel (inside the outer frame)
+    elements: [
+      {
+        id: "victorian-raised-panel",
+        rect: { x: 0, y: 0, widthFactor: 1, heightFactor: 1 },
+        shape: {
+          type: "raisedPanel",
+          steps: 2,
+          stepWidth: 15,  // mm per inset step
         },
       },
     ],
