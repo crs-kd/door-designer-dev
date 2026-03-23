@@ -1923,10 +1923,10 @@ const letterplateDefs = [
 const handleDefs = [
   {
     id: "lever",
-    width: 36,
-    height: 62,
+    width: 35,
+    height: 65,
     align: "right", // visual alignment (used for positioning from panel edge)
-    offsetX: 21,
+    offsetX: 23,
     offsetY: 250,
     side: "right", // logical side it belongs on; use this to place hinge on the opposite side
     mirrorWhenLeft: true, // whether to mirror the image when used on the left
