@@ -123,6 +123,64 @@ async function applyFinishToElementGroup({
    ---------------------------------------------
 */
 
+/**
+ * Simulates a top-left directional light source on the door frame edges.
+ *
+ * Light model:
+ *   • Outer top edge  → bright highlight  (surface faces light directly)
+ *   • Outer left edge → bright highlight  (surface faces light directly)
+ *   • Inner top edge  → strong shadow     (frame overhang blocks light below)
+ *   • Inner left edge → strong shadow     (frame overhang blocks light to the right)
+ *   • Inner bottom edge → subtle shadow   (indirect, opposite to source)
+ *   • Inner right edge  → subtle shadow   (indirect, opposite to source)
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} w            - Canvas width
+ * @param {number} h            - Canvas height
+ * @param {number} frameTop     - Top frame thickness (px)
+ * @param {number} frameBottom  - Bottom frame thickness (px)
+ * @param {number} frameSide    - Left/right frame thickness (px)
+ */
+function drawFrameEdgeLighting(ctx, w, h, frameTop = 35, frameBottom = 17, frameSide = 35) {
+  const reach       = 10;   // px — how far shadows/highlights bleed into the panel
+  const hiAlpha     = 0.28; // highlight intensity
+  const shAlpha     = 0.22; // primary shadow intensity
+  const shAlphaSub  = 0.09; // secondary (counter-side) shadow intensity
+
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+
+  // Helper: fill a linear gradient rectangle
+  function gradRect(x, y, rw, rh, x1, y1, x2, y2, c0, c1) {
+    const g = ctx.createLinearGradient(x1, y1, x2, y2);
+    g.addColorStop(0, c0);
+    g.addColorStop(1, c1);
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, rw, rh);
+  }
+
+  const panelX = frameSide;
+  const panelY = frameTop;
+  const panelW = w - frameSide * 2;
+  const panelH = h - frameTop - frameBottom;
+
+  // — Outer highlights —
+  gradRect(0, 0, w, reach,                        0, 0, 0, reach,   `rgba(255,255,255,${hiAlpha})`, "rgba(255,255,255,0)");
+  gradRect(0, 0, reach, h,                         0, 0, reach, 0,   `rgba(255,255,255,${hiAlpha})`, "rgba(255,255,255,0)");
+
+  // — Strong inner shadows (top & left — light source side) —
+  gradRect(panelX, panelY, panelW, reach,          0, panelY, 0, panelY + reach,   `rgba(0,0,0,${shAlpha})`, "rgba(0,0,0,0)");
+  gradRect(panelX, panelY, reach,  panelH,         panelX, 0, panelX + reach, 0,   `rgba(0,0,0,${shAlpha})`, "rgba(0,0,0,0)");
+
+  // — Subtle counter shadows (bottom & right — opposite to source) —
+  const botInner   = h - frameBottom;
+  const rightInner = w - frameSide;
+  gradRect(panelX, botInner - reach, panelW, reach,       0, botInner - reach, 0, botInner,         "rgba(0,0,0,0)", `rgba(0,0,0,${shAlphaSub})`);
+  gradRect(rightInner - reach, panelY, reach, panelH,     rightInner - reach, 0, rightInner, 0,     "rgba(0,0,0,0)", `rgba(0,0,0,${shAlphaSub})`);
+
+  ctx.restore();
+}
+
 async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish) {
   const styleObj = doorStyles.find((s) => s.name === state.selectedStyle);
 
@@ -267,6 +325,7 @@ const frameElements = JSON.parse(
   });
   finalCtx.drawImage(frameCanvas, 0, 0);
   finalCtx.globalCompositeOperation = "source-over";
+  drawFrameEdgeLighting(finalCtx, panelWidth, panelHeight, 35, 17, 35);
 
   // Step 3: Glazing
   if (state.selectedGlazing && state.selectedGlazing !== "none") {
