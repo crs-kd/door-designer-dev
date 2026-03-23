@@ -514,13 +514,13 @@ const doorStyles = [
     sidescreenOptions: ["full", "midrail", "match-door-style"],
     glazingLayout: {
       // Glass fills the arch frame opening.
-      // Arch frame: block top at 40mm, archHeight 160mm, thickness 30mm, radius 130mm.
-      // Arch peak = 40 + (160-130) = 70mm from panel top → glass starts here.
-      // Opening bottom = 40 + 850 - 30 = 860mm → glass ends just inside.
-      width: 260,          // mm — matches inner opening width
-      height: 750,         // mm — fills opening, leaving small margin at bottom
+      // Arch frame: block top at 40mm, archHeight 230mm, archRise 150mm, thickness 40mm.
+      // Arch peak = 40 + (230-150) = 120mm from panel top → glass starts here.
+      // Opening bottom = 40 + 1080 - 40 = 1080mm → glass ends just inside.
+      width: 500,          // mm — matches inner opening width (580 - 2×40)
+      height: 900,         // mm — fills opening from arch peak to near bottom rail
       offsetX: 0,
-      offsetY: 70,         // mm from panel top (aligns with arch peak)
+      offsetY: 120,        // mm from panel top (aligns with arch peak)
       align: "center",
       blockAnchor: "top",
       verticalAlign: "top",
@@ -1779,9 +1779,9 @@ const moldingDefs = [
    */
   {
     id: "victorian-glazing",
-    width: 320,           // mm — overall molding block width
-    // height = archHeight (160) + rectangular opening (660) + bottom rail (30) = 850
-    height: 850,
+    width: 580,           // mm — same as victorian-panel
+    // height: archHeight (230) + rectangular opening (810) + bottom rail (40) = 1080
+    height: 1080,
     align: "center",
     blockAnchor: "top",
     verticalAlign: "top",
@@ -1793,10 +1793,13 @@ const moldingDefs = [
         rect: { x: 0, y: 0, widthFactor: 1, heightFactor: 1 },
         shape: {
           type: "archFrame",
-          thickness: 30,    // mm — molding rail thickness on sides and bottom
-          // archHeight = spring line y from block top.
-          // radius = (320 - 2×30)/2 = 130mm → peak at 160-130 = 30mm from top = 1 rail-width ✓
-          archHeight: 160,
+          thickness: 40,    // mm — wider rail for Victorian profile
+          // Spring line at 230mm from block top → arch peak at 230-150 = 80mm from block top
+          //   = 120mm from panel top (40mm offsetY + 80mm)
+          // inner width = 580 - 2×40 = 500mm → horizontal radius = 250mm
+          // archRise: 150mm (< rx=250mm) → flatter elliptical arch, not a semicircle
+          archHeight: 230,
+          archRise: 150,
         },
       },
     ],
@@ -1811,13 +1814,15 @@ const moldingDefs = [
    */
   {
     id: "victorian-panel",
-    width: 580,           // mm — wider than the glazing surround
-    height: 460,          // mm
+    width: 580,           // mm — same as victorian-glazing
+    height: 480,          // mm
     align: "center",
-    blockAnchor: "bottom",
-    verticalAlign: "bottom",
+    blockAnchor: "top",
+    verticalAlign: "top",
     offsetX: 0,
-    offsetY: -50,         // mm from bottom of panel (inside the outer frame)
+    // 50mm gap after the arch frame (arch ends at 40+1080=1120mm → panel starts at 1170mm)
+    // Works across all valid door heights (1800–2233mm)
+    offsetY: 1170,
     elements: [
       {
         id: "victorian-raised-panel",

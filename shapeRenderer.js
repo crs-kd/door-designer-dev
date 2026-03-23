@@ -54,21 +54,30 @@ export async function drawShapeMolding(ctx, moldingDef, moldW, moldH, moldX, mol
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Draws a rectangular frame whose inner top edge is a semicircular arch.
+ * Draws a rectangular frame whose inner top edge is an arched opening.
  *
  * shape params:
  *   thickness  (mm) — rail width on sides and bottom
  *   archHeight (mm) — y-position of the arch spring line from the top of the block
- *                     (defaults to a semicircle: archHeight = innerWidth / 2)
+ *                     (defaults to rx + t so the arch peak sits one rail-width below block top)
+ *   archRise   (mm) — vertical rise of the arch from spring line to peak.
+ *                     Defaults to rx (circular semicircle). Use a smaller value for a flatter arch.
  */
 async function _drawArchFrame(ctx, w, h, shape, finish) {
   const t  = (shape.thickness ?? 30) * mmToPxBase;
-  const r  = (w - 2 * t) / 2;          // arch radius = half the inner opening width (px)
-  // archHeight (mm) → px.  Default: radius + thickness so the arch peak sits one
-  // rail-thickness below the block top, leaving room for the top molding rail.
+  const rx = (w - 2 * t) / 2;          // horizontal radius = half inner opening width (px)
+
+  // archHeight (mm) → px.  Default: rx + t so the arch peak sits one rail-width below block top.
   const ah = shape.archHeight != null
     ? shape.archHeight * mmToPxBase
-    : r + t;
+    : rx + t;
+
+  // archRise (mm) → px.  Vertical rise from spring line to peak.
+  // Defaults to rx → circular semicircle.  Use a smaller value for a flatter elliptical arch.
+  const ry = shape.archRise != null
+    ? shape.archRise * mmToPxBase
+    : rx;
+
   const cx = w / 2;
 
   // ── 1. Finish fill ──────────────────────────────────────────────────────
@@ -85,15 +94,15 @@ async function _drawArchFrame(ctx, w, h, shape, finish) {
   }
 
   // ── 2. Punch the inner opening (destination-out) ─────────────────────────
-  // Opening shape: rectangle (sides + bottom) with a semicircular arch on top.
-  // The arch spring line is at y = ah; the arch peak is at y = ah - r.
+  // Opening shape: rectangle (sides + bottom) with an elliptical arch on top.
+  // Spring line at y = ah; arch peak at y = ah - ry.
   ctx.globalCompositeOperation = "destination-out";
   ctx.beginPath();
-  ctx.moveTo(t, h - t);                    // bottom-left of opening
-  ctx.lineTo(w - t, h - t);               // bottom-right
-  ctx.lineTo(w - t, ah);                  // up to right spring of arch
-  ctx.arc(cx, ah, r, 0, Math.PI, true);   // arch: right → top → left (anticlockwise = upward)
-  ctx.closePath();                         // back to bottom-left
+  ctx.moveTo(t, h - t);                              // bottom-left of opening
+  ctx.lineTo(w - t, h - t);                          // bottom-right
+  ctx.lineTo(w - t, ah);                             // up to right spring (cx + rx, ah)
+  ctx.ellipse(cx, ah, rx, ry, 0, 0, Math.PI, true); // arch: right → peak → left (counterclockwise)
+  ctx.closePath();                                    // back to bottom-left
   ctx.fill();
   ctx.globalCompositeOperation = "source-over";
 
@@ -116,30 +125,30 @@ async function _drawArchFrame(ctx, w, h, shape, finish) {
   // Inner right-rail left edge: subtle counter-shadow
   _gradRect(ctx, w - t - depth, ah, depth, h - t - ah,  w - t - depth, 0, w - t, 0,  "rgba(0,0,0,0)", "rgba(0,0,0,0.18)");
 
-  // Arch inner edge: approximate with an arc-clipped shadow strip
-  _drawArchInnerShadow(ctx, cx, ah, r, depth);
+  // Arch inner edge: shadow strip along the inside of the arch
+  _drawArchInnerShadow(ctx, cx, ah, rx, ry, depth);
 }
 
 /**
- * Draws a shadow gradient along the inner edge of the arch.
- * Approximated as a ring of canvas strokes (clipped annulus).
+ * Draws a shadow gradient along the inner edge of the arch (elliptical annulus clip).
  */
-function _drawArchInnerShadow(ctx, cx, cy, r, depth) {
+function _drawArchInnerShadow(ctx, cx, cy, rx, ry, depth) {
   ctx.save();
 
-  // Clip to the arch rail area only (annulus between r and r+depth)
+  // Clip to the arch rail area — annulus between inner and outer ellipse (top half only)
   ctx.beginPath();
-  ctx.arc(cx, cy, r + depth, Math.PI, 0, false); // outer arc
-  ctx.arc(cx, cy, r,         0, Math.PI, true);  // inner arc (reversed)
+  ctx.ellipse(cx, cy, rx + depth, ry + depth, 0, Math.PI, 0, false); // outer ellipse: left→top→right (clockwise)
+  ctx.ellipse(cx, cy, rx,         ry,         0, 0, Math.PI, true);  // inner ellipse: right→top→left (counterclockwise)
   ctx.closePath();
   ctx.clip();
 
-  // Draw shadow using radial gradient centred on the arch
-  const grad = ctx.createRadialGradient(cx, cy, r, cx, cy, r + depth);
+  // Radial gradient approximation (uses smaller of rx/ry as inner radius)
+  const rMin = Math.min(rx, ry);
+  const grad = ctx.createRadialGradient(cx, cy, rMin, cx, cy, rMin + depth);
   grad.addColorStop(0, "rgba(0,0,0,0.22)");
   grad.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = grad;
-  ctx.fillRect(cx - r - depth, cy - r - depth, (r + depth) * 2, r + depth + depth);
+  ctx.fillRect(cx - rx - depth, cy - ry - depth, (rx + depth) * 2, ry + depth * 2);
 
   ctx.restore();
 }
@@ -178,7 +187,7 @@ async function _drawRaisedPanel(ctx, w, h, shape, finish) {
   // Each step is a rectangle inset by (step index × stepWidth).
   // Top/left edges get a highlight (top-left light source).
   // Bottom/right edges get a shadow.
-  const depth = sw * 0.45; // gradient reach within each step
+  const depth = sw * 0.75; // gradient reach within each step
 
   for (let s = 0; s < steps; s++) {
     const inset = s * sw;
@@ -187,7 +196,7 @@ async function _drawRaisedPanel(ctx, w, h, shape, finish) {
     const bw = w - inset * 2;
     const bh = h - inset * 2;
 
-    const alpha = 0.30 - s * 0.04; // slightly reduce intensity for inner steps
+    const alpha = 0.42 - s * 0.06; // slightly reduce intensity for inner steps
 
     // Top edge highlight
     _gradRect(ctx, sx, sy, bw, depth,  0, sy, 0, sy + depth,  `rgba(255,255,255,${alpha + 0.05})`, "rgba(255,255,255,0)");
