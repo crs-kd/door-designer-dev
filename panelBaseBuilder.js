@@ -1,5 +1,5 @@
 // panelBaseBuilder.js
-import { loadImage, getImageURL } from "./utils.js";
+import { loadImage, getImageURL, RENDER_SCALE } from "./utils.js";
 
 /**
  * Procedurally draws groove lines onto an existing canvas context.
@@ -16,9 +16,10 @@ export async function drawGrooves(ctx, width, height, textureDef) {
   const grooveImg = await loadImage(getImageURL("groove"));
   if (!grooveImg) return;
 
+  const RS      = RENDER_SCALE;
   const count   = textureDef.count   ?? 6;
-  const marginX = textureDef.marginX ?? 35;
-  const marginY = textureDef.marginY ?? 35;
+  const marginX = (textureDef.marginX ?? 35) * RS;
+  const marginY = (textureDef.marginY ?? 35) * RS;
 
   const innerW = width  - marginX * 2;
   const innerH = height - marginY * 2;
@@ -29,8 +30,8 @@ export async function drawGrooves(ctx, width, height, textureDef) {
 
   if (textureDef.id === "vertical") {
     // Fixed groove geometry — the panel is pre-made so spacing never reflows.
-    const grooveSpacing = 34;   // px between groove centres (fixed, ~120 mm at door scale)
-    const lipTrim       = 10;    // px trimmed from the bottom for the lip overlay
+    const grooveSpacing = 34 * RS;
+    const lipTrim       = 10 * RS;
 
     const grooveMarginY = marginY * 0.4;
     const grooveStartY  = grooveMarginY;
@@ -51,7 +52,7 @@ export async function drawGrooves(ctx, width, height, textureDef) {
 
   } else if (textureDef.id === "horizontal") {
     // Fixed groove geometry — spacing never reflows with panel height.
-    const grooveSpacing = 34;   // px between groove centres (matches vertical pitch)
+    const grooveSpacing = 34 * RS;
 
     const grooveMarginX = marginX * 0.4;
     const grooveDrawW   = width - grooveMarginX * 2;  // span full inner width

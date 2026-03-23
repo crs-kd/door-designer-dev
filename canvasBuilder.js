@@ -881,10 +881,10 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
   if (glazeDef && glazeDef.image) {
     const glazeImg = await loadImage(getImageURL(glazeDef.image));
     if (glazeImg) {
-      const marginX = glazeDef.marginX ?? glazeDef.margin ?? 0;
-      const marginY = glazeDef.marginY ?? glazeDef.margin ?? 0;
-      const offsetX = glazeDef.offsetX ?? 0;
-      const offsetY = glazeDef.offsetY ?? 0;
+      const marginX = (glazeDef.marginX ?? glazeDef.margin ?? 0) * RS;
+      const marginY = (glazeDef.marginY ?? glazeDef.margin ?? 0) * RS;
+      const offsetX = (glazeDef.offsetX ?? 0) * RS;
+      const offsetY = (glazeDef.offsetY ?? 0) * RS;
 
       const gx = marginX + offsetX;
       const gy = marginY + offsetY;
@@ -901,16 +901,16 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
       JSON.stringify(sidescreenStyle.midFrameElements)
     );
     const groupWidth = targetWidth;
-    const groupHeight = sidescreenStyle.midFrameHeight ?? 35;
-    const offsetY = sidescreenStyle.midFrameOffsetY ?? 0;
+    const groupHeight = (sidescreenStyle.midFrameHeight ?? 35) * RS;
+    const offsetY = (sidescreenStyle.midFrameOffsetY ?? 0) * RS;
 
     // Update all elements to ensure rects are absolute
     for (const el of elements) {
       const r = el.rect;
       if (!r) continue;
 
-      const w = r.width ?? (r.widthFactor ?? 0) * groupWidth;
-      const h = r.height ?? (r.heightFactor ?? 0) * groupHeight;
+      const w = r.width != null ? r.width * RS : (r.widthFactor ?? 0) * groupWidth;
+      const h = r.height != null ? r.height * RS : (r.heightFactor ?? 0) * groupHeight;
 
       const x =
         r.x === "left"
@@ -919,14 +919,14 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
           ? groupWidth - w
           : r.x === "centre"
           ? (groupWidth - w) / 2
-          : r.x ?? 0;
+          : (r.x ?? 0) * RS;
 
       const y =
         r.y === "centre"
           ? (groupHeight - h) / 2
           : r.y === "bottom"
           ? groupHeight - h
-          : r.y ?? 0;
+          : (r.y ?? 0) * RS;
 
       el.rect = { x, y, width: w, height: h };
       delete el.mixedRect;
@@ -1244,7 +1244,7 @@ const glazeDef = sidescreenGlazingDefs.find((g) => g.id === glazeId);
 if (glazeDef && glazeDef.image) {
   const glazeImg = await loadImage(getImageURL(glazeDef.image));
   if (glazeImg) {
-    const margin = glazeDef.margin ?? 35;
+    const margin = (glazeDef.margin ?? 35) * RS;
     const gx = margin;
     const gy = margin;
     const gw = targetWidth - 2 * margin;
@@ -1409,9 +1409,9 @@ async function buildPatioDoorPanel(targetWidth, targetHeight, frameFinish, showH
   if (showHandle) {
     const handleImg = await loadImage(getImageURL("patio"));
     if (handleImg) {
-      const hW = 38;
-      const hH = 67;
-      const hOffsetX = 24;
+      const hW = 38 * RS;
+      const hH = 67 * RS;
+      const hOffsetX = 24 * RS;
       const hX = handleOnLeft ? hOffsetX : targetWidth - hW - hOffsetX;
       const hY = (targetHeight - hH) / 2;
 
