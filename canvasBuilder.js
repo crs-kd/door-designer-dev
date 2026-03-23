@@ -1,4 +1,5 @@
 import {
+  RENDER_SCALE,
   getImageURL,
   loadImage,
   tintImage,
@@ -142,7 +143,8 @@ async function applyFinishToElementGroup({
  * @param {number} frameSide    - Left/right frame thickness (px)
  */
 function drawFrameEdgeLighting(ctx, w, h, frameTop = 35, frameBottom = 17, frameSide = 35) {
-  const reach       = 10;   // px — how far shadows/highlights bleed into the panel
+  const RS          = RENDER_SCALE;
+  const reach       = 10 * RS;   // px — how far shadows/highlights bleed into the panel
   const hiAlpha     = 0.06; // highlight intensity
   const shAlpha     = 0.22; // primary shadow intensity
   const shAlphaSub  = 0.09; // secondary (counter-side) shadow intensity
@@ -182,6 +184,7 @@ function drawFrameEdgeLighting(ctx, w, h, frameTop = 35, frameBottom = 17, frame
 }
 
 async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish) {
+  const RS = RENDER_SCALE;
   const styleObj = doorStyles.find((s) => s.name === state.selectedStyle);
 
   // Groove texture def
@@ -231,7 +234,7 @@ async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish)
     xFactor: 0.13,
     yFactor: 0.96,
     widthFactor: 1,
-    height: 5,
+    height: 5 * RS,
     fillStyle: "rgba(255, 255, 255, 0.35)",
     blend: "overlay",
   };
@@ -255,22 +258,22 @@ const frameElements = JSON.parse(
   JSON.stringify([
     {
       id: "top-frame",
-      mixedRect: { y: 0, height: 35, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: 0, height: 35 * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL(`frame-x${frameSuffix}`) },
     },
     {
       id: "bottom-frame",
-      mixedRect: { y: "bottom", height: 17, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: "bottom", height: 17 * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL(`frame-x${frameSuffix}`) },
     },
     {
       id: "left-vertical-frame",
-      mixedRect: { x: 0, width: 35, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: 0, width: 35 * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL(`frame-y${frameSuffix}`) },
     },
     {
       id: "right-vertical-frame",
-      mixedRect: { x: "right", width: 35, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: "right", width: 35 * RS, yFactor: 0, heightFactor: 1 },
       options: {
         imageURL: getImageURL(`frame-y${frameSuffix}`),
         flipHorizontal: true,
@@ -278,12 +281,12 @@ const frameElements = JSON.parse(
     },
     {
       id: "top-left-corner",
-      rect: { x: 0, y: 0, width: 35, height: 35 },
+      rect: { x: 0, y: 0, width: 35 * RS, height: 35 * RS },
       options: { imageURL: getImageURL(`frame-corner${frameSuffix}`) },
     },
     {
       id: "top-right-corner",
-      rect: { x: "right", y: 0, width: 35, height: 35 },
+      rect: { x: "right", y: 0, width: 35 * RS, height: 35 * RS },
       options: {
         imageURL: getImageURL(`frame-corner${frameSuffix}`),
         flipHorizontal: true,
@@ -291,7 +294,7 @@ const frameElements = JSON.parse(
     },
     {
       id: "bottom-right-corner",
-      rect: { x: "right", y: "bottom", width: 35, height: 35 },
+      rect: { x: "right", y: "bottom", width: 35 * RS, height: 35 * RS },
       options: {
         imageURL: getImageURL(`frame-y${frameSuffix}`),
         flipVertical: true,
@@ -300,7 +303,7 @@ const frameElements = JSON.parse(
     },
     {
       id: "bottom-left-corner",
-      rect: { x: 0, y: "bottom", width: 35, height: 35 },
+      rect: { x: 0, y: "bottom", width: 35 * RS, height: 35 * RS },
       options: {
         imageURL: getImageURL(`frame-y${frameSuffix}`),
         flipVertical: true,
@@ -325,7 +328,7 @@ const frameElements = JSON.parse(
   });
   finalCtx.drawImage(frameCanvas, 0, 0);
   finalCtx.globalCompositeOperation = "source-over";
-  drawFrameEdgeLighting(finalCtx, panelWidth, panelHeight, 35, 17, 35);
+  drawFrameEdgeLighting(finalCtx, panelWidth, panelHeight, 35 * RS, 17 * RS, 35 * RS);
 
   // Step 3: Glazing
   if (state.selectedGlazing && state.selectedGlazing !== "none") {
@@ -333,7 +336,7 @@ const frameElements = JSON.parse(
     const layout = styleObj?.glazingLayout;
 
     if (glazeDef && layout) {
-      const mmToPx = 600 / 1980;
+      const mmToPx = (600 * RENDER_SCALE) / 1980;
 
       const width = Math.round((layout.width ?? 0) * mmToPx);
       const height = Math.round((layout.height ?? 0) * mmToPx);
@@ -433,7 +436,7 @@ const frameElements = JSON.parse(
 
   let moldingElements = [];
 
-  const mmToPx = 600 / 1980; // consistent mm-to-px scale used throughout your app
+  const mmToPx = (600 * RENDER_SCALE) / 1980; // consistent mm-to-px scale used throughout your app
 
   const moldW = Math.round((moldingDef?.width ?? 0) * mmToPx);
   const moldH = Math.round((moldingDef?.height ?? 0) * mmToPx);
@@ -593,12 +596,12 @@ const frameElements = JSON.parse(
     if (hDef) {
       const handleImg = await loadImage(getImageURL(state.selectedHandle));
       if (handleImg) {
-        const hW = hDef.width;
-        const hH = hDef.height;
+        const hW = hDef.width * RS;
+        const hH = hDef.height * RS;
 
         const isLeft = state.handleSide === "left";
-        const hX = isLeft ? hDef.offsetX : panelWidth - hW - hDef.offsetX;
-        const hY = panelHeight - hH - hDef.offsetY;
+        const hX = isLeft ? hDef.offsetX * RS : panelWidth - hW - hDef.offsetX * RS;
+        const hY = panelHeight - hH - hDef.offsetY * RS;
 
         // 1. Tint and optionally flip
         const tintedHandle = tintImage(
@@ -636,15 +639,15 @@ const frameElements = JSON.parse(
 if (state.currentView === "internal") {
   const hingeImg = await loadImage(getImageURL("hinge"));
   if (hingeImg) {
-    const hW = 6;
-    const hH = 32;
-    const hingeGap = 190;
+    const hW = 6 * RS;
+    const hH = 32 * RS;
+    const hingeGap = 190 * RS;
     const hingeCount = 3;
 
     const totalHeight = hingeCount * hH + (hingeCount - 1) * hingeGap;
     const startY = (panelHeight - totalHeight) / 2;
 
-    const hingeOffsetX = hDef.hingeOffsetX ?? 4;
+    const hingeOffsetX = (hDef.hingeOffsetX ?? 4) * RS;
     const isLeft = state.handleSide === "left";
     const hingeX = isLeft ? panelWidth - hW - hingeOffsetX : hingeOffsetX;
 
@@ -706,7 +709,7 @@ if (state.currentView === "internal") {
     xFactor: 0.07,
     yFactor: 0.989,
     widthFactor: 0.86,
-    height: 20,
+    height: 20 * RS,
     fillStyle: "rgb(236, 236, 236)",
     blend: null,
   };
@@ -733,6 +736,7 @@ if (state.currentView === "internal") {
 */
 
 async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, finish){
+  const RS = RENDER_SCALE;
   const baseColor = frameFinish.color || "#ccc";
   const textureURL = frameFinish.texture || null;
   const textureBlend = frameFinish.textureBlend || "overlay";
@@ -1648,7 +1652,7 @@ async function updateCanvasPreview() {
     const leftWidth = sidescreenDims.left.displayPixels;
     const rightWidth = sidescreenDims.right.displayPixels;
 
-const mmToPx = 600 / 1980; // Matches door/sidescreen scale
+const mmToPx = (600 * RENDER_SCALE) / 1980; // Matches door/sidescreen scale
 
 const fanlightHeightMm = parseInt(
   document.getElementById("fanLightHeightInput")?.value || 350

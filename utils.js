@@ -71,9 +71,11 @@ function goToPreviousStep() {
   }
 }
 
+const RENDER_SCALE = 2;
+
 function getScaledPanelSize(inputWidthMM, inputHeightMM) {
   const baseHeightMM = 1980;
-  const baseDisplayHeight = 600;
+  const baseDisplayHeight = 600 * RENDER_SCALE;
   const scaleFactor = baseDisplayHeight / baseHeightMM;
   return {
     width: Math.round(inputWidthMM * scaleFactor),
@@ -201,6 +203,7 @@ function buildMoldingMask(moldDef, width, height) {
 }
 
 export {
+  RENDER_SCALE,
   getImageURL,
   loadImage,
   tintImage,
