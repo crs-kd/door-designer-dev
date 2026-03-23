@@ -3,8 +3,6 @@ import {
   loadImage,
   tintImage,
   mirrorCanvas,
-  goToNextStep,
-  goToPreviousStep,
   getDoorPanelDimensionsFromInput,
   getSidescreenDimensionsFromInput,
 } from "./utils.js";
@@ -2187,6 +2185,8 @@ function populateStartDoorTypeThumbnails() {
 
         populateConfigurationOptions(); // Populate configurations for selected door type
         populateStylesByRange();
+        populateHandleThumbnails();
+        populateLetterplateThumbnails();
         document.getElementById("startScreen").classList.add("hidden");
         document.querySelector(".door-designer-container").style.display =
           "flex";
@@ -2218,11 +2218,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Init the start screen (range selection)
   initializeStartScreen();
 
-  // Step nav
-  document
-    .getElementById("backBtn")
-    .addEventListener("click", goToPreviousStep);
-  document.getElementById("nextBtn").addEventListener("click", goToNextStep);
+  // X button — return to start screen
+  document.getElementById("closeDesignerBtn").addEventListener("click", () => {
+    initializeStartScreen();
+  });
 
   document.getElementById("hingeToggleBtn").addEventListener("click", () => {
     state.handleSide = state.handleSide === "left" ? "right" : "left";
@@ -2240,14 +2239,11 @@ document.addEventListener("DOMContentLoaded", () => {
   populateHandleThumbnails();
   populateLetterplateThumbnails();
 
-  // Step menu clicks
+  // Step menu clicks — scroll to section
   document.querySelectorAll(".step-menu-item").forEach((item, idx) => {
     item.addEventListener("click", () => {
-      if (isStepAccessible(idx)) {
-        state.currentStep = idx;
-        showStep(idx);
-        updateNavigationControls();
-      }
+      state.currentStep = idx;
+      showStep(idx);
     });
   });
 

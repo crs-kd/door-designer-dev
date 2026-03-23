@@ -105,6 +105,7 @@
         display: flex;
         width: 100%;
         height: 100vh;
+        position: relative;
       }
 
       /* Panel 1: Menu Container */
@@ -211,27 +212,22 @@
         appearance: textfield;
       }
 
-      .nav-buttons {
-        margin-top: auto;
-        display: flex;
-        justify-content: space-between;
-        padding: 10px;
-        border-top: 1px solid #ccc;
-      }
-      .nav-buttons button {
+      .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 14px;
         background: none;
         border: none;
+        font-size: 1.3rem;
         color: #041244;
-        font-size: 0.9rem;
         cursor: pointer;
-        padding: 10px;
+        line-height: 1;
+        padding: 4px 8px;
+        border-radius: 4px;
+        z-index: 100;
       }
-      .nav-buttons button:hover {
-        text-decoration: underline;
-      }
-      .nav-buttons button:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
+      .close-btn:hover {
+        background: rgba(0,0,0,0.06);
       }
 
       /* Panel 2: Thumbnail Container */
@@ -245,16 +241,30 @@
         box-sizing: border-box;
         transition: opacity 0.5s ease;
       }
-      /* Only the active step group is visible */
+      /* All steps are always visible — scrollable */
       .thumbnail-container .step {
-        display: none;
-      }
-      .thumbnail-container .step.step-active {
         display: block;
+        scroll-margin-top: 8px;
+        padding-top: 6px;
+        border-top: 1px solid #eee;
+      }
+      .thumbnail-container .step:first-child {
+        border-top: none;
+      }
+      .step-section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #041244;
+        padding: 10px 12px 4px;
+        margin: 0;
       }
       .thumbnail-container h3.collection-title {
-        margin: 20px 0 10px;
-        font-size: 1.3rem;
+        margin: 10px 0 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #999;
       }
       .grid-container {
         display: grid;
@@ -478,6 +488,7 @@
 
     <!-- Main Designer Container -->
     <div class="door-designer-container">
+      <button class="close-btn" id="closeDesignerBtn" title="Back to start">&#x2715;</button>
       <!-- Panel 1: Menu Container -->
       <div class="menu-container">
         <div class="logo">
@@ -561,30 +572,29 @@
             />
           </div>
         </div>
-        <!-- Navigation Buttons at the Bottom -->
-        <div class="nav-buttons">
-          <button id="backBtn">Back</button>
-          <button id="nextBtn">Next</button>
-        </div>
       </div>
 
       <!-- Panel 2: Thumbnail Container -->
       <div class="thumbnail-container">
         <!-- Only include the door designer steps (range is now on the start screen) -->
         <!-- Step 0: Configuration -->
-        <div id="configuration-step" class="step step-active">
+        <div id="configuration-step" class="step">
+          <p class="step-section-title">Configuration</p>
           <div class="grid-container" id="configuration-list"></div>
         </div>
         <!-- Step 1: Sidescreen Style -->
         <div id="sidescreen-style-step" class="step">
+          <p class="step-section-title">Sidescreen</p>
           <div class="grid-container" id="sidescreen-style-list"></div>
         </div>
         <!-- Step 2: Style -->
         <div id="style-step" class="step">
+          <p class="step-section-title">Panel</p>
           <div id="style-list"></div>
         </div>
         <!-- Step 3: Finish -->
         <div id="finish-step" class="step">
+          <p class="step-section-title">Colour</p>
           <div class="finish-group">
             <div class="grid-container" id="external-finish-list"></div>
           </div>
@@ -594,10 +604,12 @@
         </div>
         <!-- Step 4: Glazing -->
         <div id="glazing-step" class="step">
+          <p class="step-section-title">Glazing</p>
           <div class="grid-container" id="glazing-list"></div>
         </div>
         <!-- Step 5: Hardware -->
         <div id="hardware-step" class="step">
+          <p class="step-section-title">Hardware</p>
           <h3 class="collection-title">Hardware Colour</h3>
           <div class="grid-container" id="hardware-colour-list"></div>
           <h3 class="collection-title">Handle</h3>
