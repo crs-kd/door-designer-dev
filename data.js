@@ -582,8 +582,6 @@ const doorStyles = [
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
-      "letterplate-mid": "letterplate-mid-a",
-      "letterplate-btm": "letterplate-btm-A",
     },
     handleOptions: ["lever"],
   },
@@ -614,8 +612,7 @@ const doorStyles = [
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
-      "letterplate-mid": "letterplate-mid-a",
-      "letterplate-btm": "letterplate-btm-A",
+      "letterplate-mid": "letterplate-mid-b",
     },
     handleOptions: ["lever"],
   },
@@ -644,8 +641,7 @@ const doorStyles = [
     ],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
-      "letterplate-mid": "letterplate-mid-a",
-      "letterplate-btm": "letterplate-btm-A",
+      "letterplate-mid": "letterplate-mid-b",
     },
     handleOptions: ["lever"],
   },
@@ -668,8 +664,7 @@ const doorStyles = [
     glazingOptions: [],
     letterplateOptions: {
       "letterplate-none": "letterplate-none",
-      "letterplate-mid": "letterplate-mid-a",
-      "letterplate-btm": "letterplate-btm-A",
+      "letterplate-mid": "letterplate-mid-b",
     },
     handleOptions: ["lever"],
   },
@@ -865,7 +860,6 @@ const moldingDefs = [
     blockAnchor: "centre",
     offsetX: 0,
     offsetYFactor: 0.5,
-    offsetYRS: 75,
     mask: false,
     elements: [
       {
@@ -2205,28 +2199,35 @@ const hardwareColorDisplayNames = {
 const handleOptions = ["lever"];
 const handleDisplayNames = { lever: "Lever" };
 
-// Coordinates for letterplates
+// Coordinates for letterplates — all dimensions in mm
 const letterplateDefs = [
   {
     id: "letterplate-mid-a",
-    width: 100,
-    height: 25,
+    width: 310,   // mm — standard letterplate width
+    height: 68,   // mm
     align: "center",
-    offsetY: 170,
+    offsetY: 520, // mm from bottom of panel
+  },
+  {
+    id: "letterplate-mid-b",
+    width: 310,   // mm — standard letterplate width
+    height: 68,   // mm
+    align: "center",
+    offsetY: 764, // mm from bottom of panel
   },
   {
     id: "letterplate-low-A",
-    width: 100,
-    height: 25,
+    width: 310,
+    height: 68,
     align: "center",
-    offsetY: 85,
+    offsetY: 140,
   },
   {
     id: "letterplate-btm-A",
-    width: 100,
-    height: 25,
+    width: 310,
+    height: 68,
     align: "center",
-    offsetY: 50,
+    offsetY: 185,
   },
 ];
 

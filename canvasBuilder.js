@@ -862,11 +862,16 @@ if (state.currentView === "internal") {
     if (lpDef) {
       const plateImg = await loadImage(getImageURL("letterplate")); // Always use static name
       if (plateImg) {
-        const lpW = lpDef.width;
-        const lpH = lpDef.height;
+        const lpW = Math.round(lpDef.width  * mmToPx);
+        const lpH = Math.round(lpDef.height * mmToPx);
 
         const lpX = (panelWidth - lpW) / 2;
-        const lpY = panelHeight - lpH - lpDef.offsetY;
+
+        // Lorimer midrail styles: lock letterplate to midrail centre
+        const hasLorimerMidrail = styleObj?.styleAssets?.moldings?.includes("lorimer-midrail");
+        const lpY = hasLorimerMidrail
+          ? Math.round(panelHeight / 2 - lpH / 2)
+          : Math.round(panelHeight - lpH - lpDef.offsetY * mmToPx);
 
         const tintedPlate = tintImage(
           plateImg,
