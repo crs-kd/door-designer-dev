@@ -357,7 +357,7 @@ const frameElements = JSON.parse(
   if (!isLorimerCollection) {
     const threshH = 5 * RS;
     const threshY = panelHeight - threshH;
-    const threshW = panelWidth * 0.86;
+    const threshW = panelWidth * 0.88;
     const threshX = (panelWidth - threshW) / 2;
     finalCtx.globalCompositeOperation = "source-over";
     finalCtx.fillStyle = "rgb(236, 236, 236)";
@@ -731,9 +731,9 @@ const frameElements = JSON.parse(
 
         finalCtx.save();
         finalCtx.shadowColor = "rgba(0,0,0,0.35)";
-        finalCtx.shadowBlur = 8 * RS;
+        finalCtx.shadowBlur = 2 * RS;
         finalCtx.shadowOffsetX = 2 * RS;
-        finalCtx.shadowOffsetY = 3 * RS;
+        finalCtx.shadowOffsetY = 6 * RS;
         if (isLeft) {
           finalCtx.translate(hX + hW / 2, hY + hH / 2);
           finalCtx.scale(-1, 1); // Mirror horizontally
