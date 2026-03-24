@@ -10,13 +10,21 @@ import { getImageURL } from "./utils.js";
 const imageOverloads = {};
 
 // Door ranges and collections
-const doorRanges = ["Lorimer"];
+const doorRanges = ["Lorimer", "TimberLuxe"];
+
+// Collections available within each range (determines display order)
+const rangeCollections = {
+  "Lorimer":    ["Lorimer", "Elegance", "Allure"],
+  "TimberLuxe": ["Country", "Classic", "Urban"],
+};
+
+// Flat list kept for backwards-compat with any code that iterates all collections
 const doorCollections = [
   "Lorimer",
   "Elegance",
   "Allure",
-  "Classic",
   "Country",
+  "Classic",
   "Urban",
 ];
 
@@ -547,6 +555,123 @@ const doorStyles = [
     },
     handleOptions: ["lever"],
   },
+
+  // ── Lorimer Collection ────────────────────────────────────────────────────
+
+  // 1) Full Glass — glass fills the entire door opening, no midrail
+  {
+    range: "Lorimer",
+    collection: "Lorimer",
+    name: "lorimer-full-glass",
+    minWidth: 733,
+    maxWidth: 1000,
+    minHeight: 1800,
+    maxHeight: 2233,
+    styleAssets: {
+      texture: null,
+    },
+    sidescreenOptions: ["full", "midrail"],
+    glazingLayout: {
+      // frameInset values are in "base pixels" (multiplied by RENDER_SCALE in renderer)
+      frameInset: { side: 35, top: 35 },
+    },
+    glazingOptions: [
+      "clear", "adina", "eden", "graphite", "harmony", "iris",
+      "joy", "murano", "satin", "virtue", "digital", "contora", "charcoal",
+    ],
+    letterplateOptions: {
+      "letterplate-none": "letterplate-none",
+      "letterplate-mid": "letterplate-mid-a",
+      "letterplate-btm": "letterplate-btm-A",
+    },
+    handleOptions: ["lever"],
+  },
+
+  // 2) Midrail + Glass — glass above and below a centred midrail
+  {
+    range: "Lorimer",
+    collection: "Lorimer",
+    name: "lorimer-midrail-glass",
+    minWidth: 733,
+    maxWidth: 1000,
+    minHeight: 1800,
+    maxHeight: 2233,
+    styleAssets: {
+      texture: null,
+      moldings: ["lorimer-midrail"],
+    },
+    sidescreenOptions: ["full", "midrail"],
+    glazingLayout: [
+      // Zone 1: glass above the midrail (from top-frame inner edge to midrail top)
+      { midInset: { above: true, side: 35, top: 35 } },
+      // Zone 2: glass below the midrail (from midrail bottom to sill inner edge)
+      { midInset: { above: false, side: 35, bottom: 17 } },
+    ],
+    glazingOptions: [
+      "clear", "adina", "eden", "graphite", "harmony", "iris",
+      "joy", "murano", "satin", "virtue", "digital", "contora", "charcoal",
+    ],
+    letterplateOptions: {
+      "letterplate-none": "letterplate-none",
+      "letterplate-mid": "letterplate-mid-a",
+      "letterplate-btm": "letterplate-btm-A",
+    },
+    handleOptions: ["lever"],
+  },
+
+  // 3) Midrail + Glass above + Solid below — glass only in upper zone
+  {
+    range: "Lorimer",
+    collection: "Lorimer",
+    name: "lorimer-midrail-solid-bottom",
+    minWidth: 733,
+    maxWidth: 1000,
+    minHeight: 1800,
+    maxHeight: 2233,
+    styleAssets: {
+      texture: null,
+      moldings: ["lorimer-midrail"],
+    },
+    sidescreenOptions: ["full", "midrail"],
+    glazingLayout: [
+      // Glass only above the midrail; below is solid (door finish shows through)
+      { midInset: { above: true, side: 35, top: 35 } },
+    ],
+    glazingOptions: [
+      "clear", "adina", "eden", "graphite", "harmony", "iris",
+      "joy", "murano", "satin", "virtue", "digital", "contora", "charcoal",
+    ],
+    letterplateOptions: {
+      "letterplate-none": "letterplate-none",
+      "letterplate-mid": "letterplate-mid-a",
+      "letterplate-btm": "letterplate-btm-A",
+    },
+    handleOptions: ["lever"],
+  },
+
+  // 4) Solid — midrail only, no glass (door finish visible throughout)
+  {
+    range: "Lorimer",
+    collection: "Lorimer",
+    name: "lorimer-solid",
+    minWidth: 733,
+    maxWidth: 1000,
+    minHeight: 1800,
+    maxHeight: 2233,
+    styleAssets: {
+      texture: null,
+      moldings: ["lorimer-midrail"],
+    },
+    sidescreenOptions: ["full", "midrail"],
+    glazingLayout: [],   // no glazing — solid panel with decorative midrail only
+    glazingOptions: [],
+    letterplateOptions: {
+      "letterplate-none": "letterplate-none",
+      "letterplate-mid": "letterplate-mid-a",
+      "letterplate-btm": "letterplate-btm-A",
+    },
+    handleOptions: ["lever"],
+  },
 ];
 
 // Configuration choices
@@ -593,9 +718,13 @@ const styleDisplayNames = {
   lorimer: "Lorimer",
   berlin: "Berlin",
   lisbon: "Lisbon",
-  madrid: "madrid",
+  madrid: "Madrid",
   miami: "Miami",
-  // Add more if needed
+  victorian: "Victorian",
+  "lorimer-full-glass": "Full Glass",
+  "lorimer-midrail-glass": "Midrail & Glass",
+  "lorimer-midrail-solid-bottom": "Midrail & Solid",
+  "lorimer-solid": "Solid Panel",
 };
 
 const finishOptions = [
@@ -721,6 +850,64 @@ const moldingDefs = [
       },
     ],
   },
+
+  // ── Lorimer Midrail ──────────────────────────────────────────────────────
+  // Full-width horizontal bar centered vertically on the main door panel.
+  // Uses widthFactor: 1 (spans full panel) + offsetYFactor: 0.5 (centred height).
+  {
+    id: "lorimer-midrail",
+    widthFactor: 1,
+    height: 75,
+    align: "center",
+    verticalAlign: "top",
+    blockAnchor: "centre",
+    offsetX: 0,
+    offsetYFactor: 0.5,
+    mask: false,
+    elements: [
+      {
+        id: "top-transom",
+        rect: { x: 0, y: 0, widthFactor: 1, height: 20 },
+        options: { imageURL: getImageURL("transom"), flipVertical: false },
+      },
+      {
+        id: "bottom-transom",
+        rect: { x: 0, y: "bottom", widthFactor: 1, height: 20 },
+        options: { imageURL: getImageURL("transom"), flipVertical: true },
+      },
+      {
+        id: "left-mid-frame",
+        rect: { x: 0, y: 0, width: 35, heightFactor: 1 },
+        options: { imageURL: getImageURL("frame-y") },
+      },
+      {
+        id: "right-mid-frame",
+        rect: { x: "right", y: 0, width: 35, heightFactor: 1 },
+        options: { imageURL: getImageURL("frame-y"), flipHorizontal: true },
+      },
+      {
+        id: "left-top-transom-end",
+        rect: { x: 0, y: 0, width: 35, height: 20 },
+        options: { imageURL: getImageURL("transom-end"), flipVertical: false },
+      },
+      {
+        id: "right-top-transom-end",
+        rect: { x: "right", y: 0, width: 35, height: 20 },
+        options: { imageURL: getImageURL("transom-end"), flipHorizontal: true },
+      },
+      {
+        id: "left-bottom-transom-end",
+        rect: { x: 0, y: "bottom", width: 35, height: 20 },
+        options: { imageURL: getImageURL("transom-end"), flipVertical: false },
+      },
+      {
+        id: "right-bottom-transom-end",
+        rect: { x: "right", y: "bottom", width: 35, height: 20 },
+        options: { imageURL: getImageURL("transom-end"), flipHorizontal: true },
+      },
+    ],
+  },
+
   {
     id: "short-centre",
     width: 265,
@@ -2081,6 +2268,7 @@ const glazingDisplayNames = {
 const stepIDs = [
   "configuration-step",
   "sidescreen-style-step",
+  "range-step",
   "style-step",
   "finish-step",
   "glazing-step",
@@ -2092,6 +2280,7 @@ export const state = {
   stepsCompleted: Array(7).fill(true),
   doorType: "single", // Door type: "single" for traditional entry doors, "patio" for sliding patio doors
   selectedRange: doorRanges[0],
+  selectedCollection: null,
   selectedStyle: "berlin",
   selectedConfiguration: "single",
   selectedGlazing: "clear",
@@ -2117,6 +2306,7 @@ export {
   patioDoorConfigurations,
   doorCollections,
   doorRanges,
+  rangeCollections,
   doorStyles,
   imageOverloads,
   styleDisplayNames,

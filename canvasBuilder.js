@@ -15,6 +15,7 @@ import { drawShapeMolding } from "./shapeRenderer.js";
 import { populateSidescreenStyleThumbnails } from "./ui.js";
 import { populateConfigurationOptions } from "./ui.js";
 import { populateStylesByRange } from "./ui.js";
+import { populateRangeThumbnails } from "./ui.js";
 import { populateExternalFinishThumbnails } from "./ui.js";
 import { populateInternalFinishThumbnails } from "./ui.js";
 import { populateGlazingThumbnails } from "./ui.js";
@@ -253,7 +254,15 @@ async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish)
 
   // Step 2: Frame
   const isInternalView = state.currentView === "internal";
-const frameSuffix = isInternalView ? "-int" : ""; // e.g. "frame-x-int"
+  const frameSuffix = isInternalView ? "-int" : ""; // e.g. "frame-x-int"
+
+  // Lorimer collection doors use a cropped threshold: same frame-x image as the
+  // top rail, flipped vertically, positioned so ~30% hangs off the canvas edge.
+  // All other collections keep the original 17*RS sill.
+  const isLorimerCollection = styleObj?.collection === "Lorimer";
+  const thresholdVisH = isLorimerCollection
+    ? Math.round(35 * RS * 0.70)  // Lorimer: ~30% cropped off
+    : 17 * RS;                     // Allure / Elegance: original sill height
 
 const frameElements = JSON.parse(
   JSON.stringify([
@@ -262,11 +271,16 @@ const frameElements = JSON.parse(
       mixedRect: { y: 0, height: 35 * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL(`frame-x${frameSuffix}`) },
     },
-    {
+    // Bottom frame — Lorimer: cropped & flipped. Others: standard 17px sill.
+    ...(isLorimerCollection ? [{
+      id: "bottom-frame",
+      rect: { x: 0, y: panelHeight - thresholdVisH, width: panelWidth, height: 35 * RS },
+      options: { imageURL: getImageURL(`frame-x${frameSuffix}`), flipVertical: true },
+    }] : [{
       id: "bottom-frame",
       mixedRect: { y: "bottom", height: 17 * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL(`frame-x${frameSuffix}`) },
-    },
+    }]),
     {
       id: "left-vertical-frame",
       mixedRect: { x: 0, width: 35 * RS, yFactor: 0, heightFactor: 1 },
@@ -293,23 +307,31 @@ const frameElements = JSON.parse(
         flipHorizontal: true,
       },
     },
-    {
-      id: "bottom-right-corner",
-      rect: { x: "right", y: "bottom", width: 35 * RS, height: 35 * RS },
-      options: {
-        imageURL: getImageURL(`frame-y${frameSuffix}`),
-        flipVertical: true,
-        flipHorizontal: true,
+    // Bottom corners — Lorimer: frame-corner flipped, cropped same as threshold.
+    //                  Others: original frame-y flipped.
+    ...(isLorimerCollection ? [
+      {
+        id: "bottom-right-corner",
+        rect: { x: panelWidth - 35 * RS, y: panelHeight - thresholdVisH, width: 35 * RS, height: 35 * RS },
+        options: { imageURL: getImageURL(`frame-corner${frameSuffix}`), flipVertical: true, flipHorizontal: true },
       },
-    },
-    {
-      id: "bottom-left-corner",
-      rect: { x: 0, y: "bottom", width: 35 * RS, height: 35 * RS },
-      options: {
-        imageURL: getImageURL(`frame-y${frameSuffix}`),
-        flipVertical: true,
+      {
+        id: "bottom-left-corner",
+        rect: { x: 0, y: panelHeight - thresholdVisH, width: 35 * RS, height: 35 * RS },
+        options: { imageURL: getImageURL(`frame-corner${frameSuffix}`), flipVertical: true },
       },
-    },
+    ] : [
+      {
+        id: "bottom-right-corner",
+        rect: { x: "right", y: "bottom", width: 35 * RS, height: 35 * RS },
+        options: { imageURL: getImageURL(`frame-y${frameSuffix}`), flipVertical: true, flipHorizontal: true },
+      },
+      {
+        id: "bottom-left-corner",
+        rect: { x: 0, y: "bottom", width: 35 * RS, height: 35 * RS },
+        options: { imageURL: getImageURL(`frame-y${frameSuffix}`), flipVertical: true },
+      },
+    ]),
   ])
 );
 
@@ -329,24 +351,30 @@ const frameElements = JSON.parse(
   });
   finalCtx.drawImage(frameCanvas, 0, 0);
   finalCtx.globalCompositeOperation = "source-over";
-  drawFrameEdgeLighting(finalCtx, panelWidth, panelHeight, 35 * RS, 17 * RS, 35 * RS);
+  drawFrameEdgeLighting(finalCtx, panelWidth, panelHeight, 35 * RS, thresholdVisH, 35 * RS);
+
+  // Metal threshold overlay — Allure & Elegance only (Lorimer uses the cropped frame-x instead)
+  if (!isLorimerCollection) {
+    const threshY = panelHeight * 0.989;
+    const threshW = panelWidth * 0.86;
+    const threshX = (panelWidth - threshW) / 2;
+    finalCtx.globalCompositeOperation = "source-over";
+    finalCtx.fillStyle = "rgb(236, 236, 236)";
+    finalCtx.fillRect(threshX, threshY, threshW, 5 * RS);
+  }
 
   // Step 3: Glazing
   if (state.selectedGlazing && state.selectedGlazing !== "none") {
     const glazeDef = glazingDefs.find((g) => g.id === state.selectedGlazing);
-    const layout = styleObj?.glazingLayout;
+    const rawLayout = styleObj?.glazingLayout;
+    const layouts = Array.isArray(rawLayout) ? rawLayout : rawLayout ? [rawLayout] : [];
 
-    if (glazeDef && layout) {
+    if (glazeDef && layouts.length > 0) {
       const mmToPx = (600 * RENDER_SCALE) / 1980;
 
-      const width = Math.round((layout.width ?? 0) * mmToPx);
-      const height = Math.round((layout.height ?? 0) * mmToPx);
-      const offsetX = Math.round((layout.offsetX ?? 0) * mmToPx);
-      const offsetY = Math.round((layout.offsetY ?? 0) * mmToPx);
-      const align = layout.align ?? "center";
-
+      // Load the glazing image once; use imageModifier from first zone if present
       const modifierList = [];
-      if (layout.imageModifier) modifierList.push(layout.imageModifier);
+      if (layouts[0]?.imageModifier) modifierList.push(layouts[0].imageModifier);
       if (state.glazingObscureEnabled) modifierList.push("obscure");
 
       const baseName = glazeDef.image?.toLowerCase().replace(/\.png$/, "");
@@ -356,77 +384,142 @@ const frameElements = JSON.parse(
         loadImage(getImageURL(baseName))
       );
 
-      const glazeCanvas = document.createElement("canvas");
-      glazeCanvas.width = width;
-      glazeCanvas.height = height;
-      const glazeCtx = glazeCanvas.getContext("2d");
+      for (const layout of layouts) {
+        const RS = RENDER_SCALE;
 
-      if (sharedImg && layout.elements?.length) {
-        for (const el of layout.elements) {
-          const r = el.rect ?? {};
+        // ── Resolve zone position and size ──────────────────────────────────
+        // frameInset: glass fills inner frame opening.
+        //   Values are in "base pixels × RS" to match how the frame rails are
+        //   drawn (e.g. 35 * RS for the side/top rail, 17 * RS for the sill).
+        // midInset: glass zone above or below the centred lorimer-midrail.
+        //   above:true → from top-frame inner edge to midrail top edge.
+        //   below:true → from midrail bottom edge to bottom-frame inner edge.
+        let width, height, glazeX, glazeY;
 
-          const w = r.width === "full" ? width : Math.round(r.width * mmToPx);
-          const h =
-            r.height === "full" ? height : Math.round(r.height * mmToPx);
+        if (layout.frameInset) {
+          const fi = layout.frameInset;
+          const lx = (fi.side ?? fi.left  ?? 0) * RS;
+          const rx = (fi.side ?? fi.right ?? 0) * RS;
+          const ty = (fi.top    ?? 0) * RS;
+          // bottom defaults to threshold visible height
+          const by = fi.bottom !== undefined ? fi.bottom * RS : thresholdVisH;
+          glazeX = lx;
+          glazeY = ty;
+          width  = panelWidth  - lx - rx;
+          height = panelHeight - ty - by;
 
-          const x =
-            r.x === "right"
-              ? width - w
-              : r.x === "centre"
-              ? (width - w) / 2
-              : r.x !== undefined
-              ? Math.round(r.x * mmToPx)
-              : (r.xFactor ?? 0) * width;
-
-          const y =
-            r.y === "bottom"
-              ? height - h
-              : r.y === "centre"
-              ? (height - h) / 2
-              : r.y !== undefined
-              ? Math.round(r.y * mmToPx)
-              : (r.yFactor ?? 0) * height;
-
-          glazeCtx.save();
-          glazeCtx.translate(x + w / 2, y + h / 2);
-          if (el.options?.rotation) {
-            glazeCtx.rotate((el.options.rotation * Math.PI) / 180);
+        } else if (layout.midInset) {
+          const mi = layout.midInset;
+          // Midrail height in canvas px (lorimer-midrail moldingDef height: 75mm)
+          const midrailH  = 75 * mmToPx;
+          const midrailTop = panelHeight / 2 - midrailH / 2;
+          const midrailBot = panelHeight / 2 + midrailH / 2;
+          const lx = (mi.side ?? 35) * RS;
+          glazeX = lx;
+          width  = panelWidth - lx * 2;
+          if (mi.above) {
+            const ty = (mi.top ?? 35) * RS;
+            glazeY = ty;
+            height = Math.round(Math.max(0, midrailTop - ty));
+          } else {
+            // below
+            const by = mi.bottom !== undefined ? mi.bottom * RS : thresholdVisH;
+            glazeY = Math.round(midrailBot);
+            height = Math.round(Math.max(0, panelHeight - by - glazeY));
           }
-          const scaleX = el.options?.flipHorizontal ? -1 : 1;
-          const scaleY = el.options?.flipVertical ? -1 : 1;
-          glazeCtx.scale(scaleX, scaleY);
-          glazeCtx.drawImage(sharedImg, -w / 2, -h / 2, w, h);
-          glazeCtx.restore();
+
+        } else {
+          // Legacy mm / factor-based layout (existing behaviour)
+          width = layout.widthFactor !== undefined
+            ? Math.round(layout.widthFactor * panelWidth)
+            : Math.round((layout.width ?? 0) * mmToPx);
+
+          height = layout.heightFactor !== undefined
+            ? Math.round(layout.heightFactor * panelHeight + (layout.heightOffset ?? 0) * mmToPx)
+            : Math.round((layout.height ?? 0) * mmToPx);
+
+          const offsetX = Math.round((layout.offsetX ?? 0) * mmToPx);
+          const offsetY = Math.round(
+            (layout.offsetYFactor !== undefined ? layout.offsetYFactor * panelHeight : 0) +
+            (layout.offsetY ?? 0) * mmToPx
+          );
+          const align = layout.align ?? "center";
+
+          glazeX =
+            align === "left"
+              ? offsetX
+              : align === "right"
+              ? panelWidth - width + offsetX
+              : (panelWidth - width) / 2 + offsetX;
+
+          const blockAnchor  = layout.blockAnchor  ?? "bottom";
+          const verticalAlign = layout.verticalAlign ?? "bottom";
+          const anchorY =
+            verticalAlign === "top"
+              ? 0
+              : ["center", "centre"].includes(verticalAlign)
+              ? panelHeight / 2
+              : panelHeight;
+
+          glazeY =
+            blockAnchor === "centre"
+              ? anchorY - height / 2 + offsetY
+              : blockAnchor === "top"
+              ? anchorY + offsetY
+              : anchorY - height + offsetY;
         }
-      } else if (sharedImg) {
-        glazeCtx.drawImage(sharedImg, 0, 0, width, height);
+
+        if (width <= 0 || height <= 0) continue;
+
+        // ── Draw glazing image into zone ────────────────────────────────────
+        const glazeCanvas = document.createElement("canvas");
+        glazeCanvas.width = width;
+        glazeCanvas.height = height;
+        const glazeCtx = glazeCanvas.getContext("2d");
+
+        if (sharedImg && layout.elements?.length) {
+          for (const el of layout.elements) {
+            const r = el.rect ?? {};
+
+            const w = r.width === "full" ? width : Math.round(r.width * mmToPx);
+            const h =
+              r.height === "full" ? height : Math.round(r.height * mmToPx);
+
+            const x =
+              r.x === "right"
+                ? width - w
+                : r.x === "centre"
+                ? (width - w) / 2
+                : r.x !== undefined
+                ? Math.round(r.x * mmToPx)
+                : (r.xFactor ?? 0) * width;
+
+            const y =
+              r.y === "bottom"
+                ? height - h
+                : r.y === "centre"
+                ? (height - h) / 2
+                : r.y !== undefined
+                ? Math.round(r.y * mmToPx)
+                : (r.yFactor ?? 0) * height;
+
+            glazeCtx.save();
+            glazeCtx.translate(x + w / 2, y + h / 2);
+            if (el.options?.rotation) {
+              glazeCtx.rotate((el.options.rotation * Math.PI) / 180);
+            }
+            const scaleX = el.options?.flipHorizontal ? -1 : 1;
+            const scaleY = el.options?.flipVertical ? -1 : 1;
+            glazeCtx.scale(scaleX, scaleY);
+            glazeCtx.drawImage(sharedImg, -w / 2, -h / 2, w, h);
+            glazeCtx.restore();
+          }
+        } else if (sharedImg) {
+          glazeCtx.drawImage(sharedImg, 0, 0, width, height);
+        }
+
+        finalCtx.drawImage(glazeCanvas, glazeX, glazeY);
       }
-
-      const glazeX =
-        align === "left"
-          ? offsetX
-          : align === "right"
-          ? panelWidth - width + offsetX
-          : (panelWidth - width) / 2 + offsetX;
-
-      const blockAnchor = layout.blockAnchor ?? "bottom";
-      const verticalAlign = layout.verticalAlign ?? "bottom";
-
-      const anchorY =
-        verticalAlign === "top"
-          ? 0
-          : ["center", "centre"].includes(verticalAlign)
-          ? panelHeight / 2
-          : panelHeight;
-
-      const glazeY =
-        blockAnchor === "centre"
-          ? anchorY - height / 2 + offsetY
-          : blockAnchor === "top"
-          ? anchorY + offsetY
-          : anchorY - height + offsetY;
-
-      finalCtx.drawImage(glazeCanvas, glazeX, glazeY);
     }
   }
 
@@ -446,10 +539,15 @@ const frameElements = JSON.parse(
 
   let moldingElements = [];
 
-  const moldW = Math.round((moldingDef?.width ?? 0) * mmToPx);
+  const moldW = moldingDef.widthFactor !== undefined
+    ? Math.round(moldingDef.widthFactor * panelWidth)
+    : Math.round((moldingDef?.width ?? 0) * mmToPx);
   const moldH = Math.round((moldingDef?.height ?? 0) * mmToPx);
   const offsetX = Math.round((moldingDef?.offsetX ?? 0) * mmToPx);
-  const offsetY = Math.round((moldingDef?.offsetY ?? 0) * mmToPx);
+  const offsetY = Math.round(
+    (moldingDef.offsetYFactor !== undefined ? moldingDef.offsetYFactor * panelHeight : 0) +
+    (moldingDef?.offsetY ?? 0) * mmToPx
+  );
 
   if (moldingDef?.repeat && moldingDef?.cell?.elements) {
     const { rows, cols, gapX = 0, gapY = 0 } = moldingDef.repeat;
@@ -715,28 +813,6 @@ if (state.currentView === "internal") {
         finalCtx.globalCompositeOperation = "source-over";
       }
     }
-  }
-
-  // Optional threshold overlay
-  const thresholdOverlayConfig = {
-    visible: true,
-    xFactor: 0.07,
-    yFactor: 0.989,
-    widthFactor: 0.86,
-    height: 20 * RS,
-    fillStyle: "rgb(236, 236, 236)",
-    blend: null,
-  };
-
-  if (thresholdOverlayConfig.visible) {
-    const threshX = thresholdOverlayConfig.xFactor * panelWidth;
-    const threshY = thresholdOverlayConfig.yFactor * panelHeight;
-    const threshW = thresholdOverlayConfig.widthFactor * panelWidth;
-    const threshH = thresholdOverlayConfig.height;
-    finalCtx.globalCompositeOperation = thresholdOverlayConfig.blend;
-    finalCtx.fillStyle = thresholdOverlayConfig.fillStyle;
-    finalCtx.fillRect(threshX, threshY, threshW, threshH);
-    finalCtx.globalCompositeOperation = "source-over";
   }
 
   return finalCanvas;
@@ -2060,6 +2136,13 @@ function addThumbnailClick(type) {
             }
             break;
 
+          case "range":
+            state.selectedRange = value;
+            state.selectedCollection = null;
+            populateRangeThumbnails();
+            populateStylesByRange();
+            break;
+
           case "style":
             state.selectedStyle = value;
 
@@ -2255,7 +2338,8 @@ function populateStartDoorTypeThumbnails() {
           updateDoorTypeControls();
         }
 
-        populateConfigurationOptions(); // Populate configurations for selected door type
+        populateConfigurationOptions();
+        populateRangeThumbnails();
         populateStylesByRange();
         populateHandleThumbnails();
         populateLetterplateThumbnails();

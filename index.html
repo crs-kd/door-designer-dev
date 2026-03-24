@@ -261,6 +261,34 @@
         letter-spacing: 0.06em;
         color: #999;
       }
+      .collection-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px 0 12px;
+      }
+      .collection-pill {
+        padding: 4px 12px;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        background: none;
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #999;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .collection-pill:hover {
+        border-color: #041244;
+        color: #041244;
+      }
+      .collection-pill.active {
+        background: #041244;
+        border-color: #041244;
+        color: #fff;
+      }
       .grid-container {
         display: grid;
         grid-template-columns: 1fr;
@@ -495,10 +523,11 @@
         <div class="step-menu">
           <span data-index="0" class="step-menu-item">Configuration</span>
           <span data-index="1" class="step-menu-item hidden" id="sidescreenMenuItem">Sidescreen</span>
-          <span data-index="2" class="step-menu-item" id="panelMenuItem">Panel</span>
-          <span data-index="3" class="step-menu-item">Colour</span>
-          <span data-index="4" class="step-menu-item" id="glazingMenuItem">Glazing</span>
-          <span data-index="5" class="step-menu-item">Hardware</span>
+          <span data-index="2" class="step-menu-item" id="rangeMenuItem">Range</span>
+          <span data-index="3" class="step-menu-item" id="panelMenuItem">Panel</span>
+          <span data-index="4" class="step-menu-item">Colour</span>
+          <span data-index="5" class="step-menu-item" id="glazingMenuItem">Glazing</span>
+          <span data-index="6" class="step-menu-item">Hardware</span>
         </div>
 
         <div id="styleSizeInfo" class="style-size-info">
@@ -582,7 +611,12 @@
           <p class="step-section-title">Sidescreen</p>
           <div class="grid-container" id="sidescreen-style-list"></div>
         </div>
-        <!-- Step 2: Style -->
+        <!-- Step 2: Range -->
+        <div id="range-step" class="step">
+          <p class="step-section-title">Range</p>
+          <div id="range-list"></div>
+        </div>
+        <!-- Step 3: Style -->
         <div id="style-step" class="step">
           <p class="step-section-title">Panel</p>
           <div id="style-list"></div>

@@ -15,6 +15,8 @@ import {
   sidescreenGlazingDefs,
   glazingDefs,
   doorCollections,
+  doorRanges,
+  rangeCollections,
   finishOptions,
   internalFinishMap,
 } from "./data.js";
@@ -80,7 +82,7 @@ function updateConfigurationOptionVisibility() {
 
   const sidescreenStyleStep = document.getElementById("step-sidescreenStyle");
 
-  const sidescreenStyleMenu = document.querySelector('.step-menu-item[data-index="1"]');
+  const sidescreenStyleMenu = document.getElementById("sidescreenMenuItem");
 
   // Patio doors never have sidescreens or fanlights
   if (state.doorType === "patio") {
@@ -124,29 +126,72 @@ function updateConfigurationOptionVisibility() {
 */
 
 
+function populateRangeThumbnails() {
+  const container = document.getElementById("range-list");
+  if (!container) return;
+  let html = `<div class="grid-container">`;
+  doorRanges.forEach(range => {
+    html += `
+      <div class="thumbnail" data-type="range" data-value="${range}">
+        <img src="${getImageURL(range.toLowerCase() + '-thumb')}" alt="${range}"
+             onerror="this.onerror=null;this.src='${getImageURL('placeholder-thumb')}'">
+        <p>${range}</p>
+      </div>`;
+  });
+  html += `</div>`;
+  container.innerHTML = html;
+  addThumbnailClick("range");
+  container.querySelectorAll('.thumbnail[data-type="range"]').forEach(el => {
+    el.classList.toggle("selected", el.dataset.value === state.selectedRange);
+  });
+}
+
 function populateStylesByRange() {
   const container = document.getElementById("style-list");
-  const filtered = doorStyles.filter(s => s.range === state.selectedRange);
-  const grouped = {};
-  doorCollections.forEach(c => grouped[c] = filtered.filter(s => s.collection === c));
+  const collections = rangeCollections[state.selectedRange] ?? [];
+  const filtered    = doorStyles.filter(s => s.range === state.selectedRange);
+  const grouped     = {};
+  collections.forEach(c => { grouped[c] = filtered.filter(s => s.collection === c); });
 
-  let html = "";
-  doorCollections.forEach(col => {
-    if (grouped[col].length > 0) {
+  const activeCol = state.selectedCollection; // null = show all
+
+  // ── Collection filter pills ───────────────────────────────────────────────
+  let html = `<div class="collection-filter">
+    <button class="collection-pill${activeCol === null ? ' active' : ''}" data-collection="all">All</button>`;
+  collections.forEach(col => {
+    if ((grouped[col] ?? []).length > 0) {
+      html += `<button class="collection-pill${activeCol === col ? ' active' : ''}" data-collection="${col}">${col}</button>`;
+    }
+  });
+  html += `</div>`;
+
+  // ── Styles (filtered by active collection or all) ─────────────────────────
+  const displayCols = activeCol ? [activeCol] : collections;
+  displayCols.forEach(col => {
+    if ((grouped[col] ?? []).length > 0) {
       html += `<h3 class="collection-title">${col}</h3><div class="grid-container">`;
       grouped[col].forEach(st => {
         const disp = styleDisplayNames[st.name] || st.name;
         html += `
           <div class="thumbnail start-thumb" data-type="style" data-value="${st.name}">
-            <img src="${getImageURL(st.name + "-thumb")}" alt="${disp}">
+            <img src="${getImageURL(st.name + '-thumb')}" alt="${disp}">
             <p>${disp}</p>
-          </div>
-        `;
+          </div>`;
       });
       html += `</div>`;
     }
   });
+
   container.innerHTML = html;
+
+  // Collection pill clicks
+  container.querySelectorAll('.collection-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.selectedCollection = btn.dataset.collection === 'all' ? null : btn.dataset.collection;
+      populateStylesByRange();
+    });
+  });
+
   addThumbnailClick("style");
 }
 
@@ -330,6 +375,7 @@ export {
   updateSummary,
   updateViewIndicator,
   populateStylesByRange,
+  populateRangeThumbnails,
   populateConfigurationOptions,
   populateSidescreenStyleThumbnails,
   populateExternalFinishThumbnails,

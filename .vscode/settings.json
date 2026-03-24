@@ -1,0 +1,15 @@
+{
+  "liveServer.settings.ignoreFiles": [
+    ".vscode/**",
+    ".git/**",
+    "node_modules/**",
+    "**/*.log",
+    "**/.DS_Store"
+  ],
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/node_modules/**": true,
+    "**/.vscode/**": true
+  },
+  "liveServer.settings.wait": 500
+}
