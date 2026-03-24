@@ -857,12 +857,14 @@ const moldingDefs = [
   {
     id: "lorimer-midrail",
     widthFactor: 1,
-    height: 75,
+    heightRS: 75,
+    useRS: true,
     align: "center",
     verticalAlign: "top",
     blockAnchor: "centre",
     offsetX: 0,
     offsetYFactor: 0.5,
+    offsetYRS: 75,
     mask: false,
     elements: [
       {

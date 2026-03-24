@@ -355,12 +355,13 @@ const frameElements = JSON.parse(
 
   // Metal threshold overlay — Allure & Elegance only (Lorimer uses the cropped frame-x instead)
   if (!isLorimerCollection) {
-    const threshY = panelHeight * 0.989;
+    const threshH = 5 * RS;
+    const threshY = panelHeight - threshH;
     const threshW = panelWidth * 0.86;
     const threshX = (panelWidth - threshW) / 2;
     finalCtx.globalCompositeOperation = "source-over";
     finalCtx.fillStyle = "rgb(236, 236, 236)";
-    finalCtx.fillRect(threshX, threshY, threshW, 5 * RS);
+    finalCtx.fillRect(threshX, threshY, threshW, threshH);
   }
 
   // Step 3: Glazing
@@ -410,10 +411,11 @@ const frameElements = JSON.parse(
 
         } else if (layout.midInset) {
           const mi = layout.midInset;
-          // Midrail height in canvas px (lorimer-midrail moldingDef height: 75mm)
-          const midrailH  = 75 * mmToPx;
-          const midrailTop = panelHeight / 2 - midrailH / 2;
-          const midrailBot = panelHeight / 2 + midrailH / 2;
+          // Midrail uses RS units to match sidescreen midFrameHeight/midFrameOffsetY logic
+          const midrailH      = 75 * RS;
+          const midrailCenter = panelHeight / 2 + 75 * RS;
+          const midrailTop    = midrailCenter - midrailH / 2;
+          const midrailBot    = midrailCenter + midrailH / 2;
           const lx = (mi.side ?? 35) * RS;
           glazeX = lx;
           width  = panelWidth - lx * 2;
@@ -542,10 +544,13 @@ const frameElements = JSON.parse(
   const moldW = moldingDef.widthFactor !== undefined
     ? Math.round(moldingDef.widthFactor * panelWidth)
     : Math.round((moldingDef?.width ?? 0) * mmToPx);
-  const moldH = Math.round((moldingDef?.height ?? 0) * mmToPx);
+  const moldH = moldingDef.heightRS !== undefined
+    ? Math.round(moldingDef.heightRS * RS)
+    : Math.round((moldingDef?.height ?? 0) * mmToPx);
   const offsetX = Math.round((moldingDef?.offsetX ?? 0) * mmToPx);
   const offsetY = Math.round(
     (moldingDef.offsetYFactor !== undefined ? moldingDef.offsetYFactor * panelHeight : 0) +
+    (moldingDef.offsetYRS !== undefined ? moldingDef.offsetYRS * RS : 0) +
     (moldingDef?.offsetY ?? 0) * mmToPx
   );
 
@@ -615,6 +620,9 @@ const frameElements = JSON.parse(
   } else if (moldingDef?.elements) {
     moldingElements = JSON.parse(JSON.stringify(moldingDef.elements));
 
+    const useRS = moldingDef.useRS === true;
+    const toUnit = (v) => useRS ? Math.round(v * RS) : Math.round(v * mmToPx);
+
     for (const el of moldingElements) {
       const r = el.rect ?? {};
 
@@ -622,12 +630,12 @@ const frameElements = JSON.parse(
         r.width !== undefined
           ? r.width === "full"
             ? moldW
-            : Math.round(r.width * mmToPx)
+            : toUnit(r.width)
           : (r.widthFactor ?? 0) * moldW;
 
       const h =
         r.height !== undefined
-          ? Math.round(r.height * mmToPx)
+          ? toUnit(r.height)
           : (r.heightFactor ?? 0) * moldH;
 
       const x =
@@ -636,7 +644,7 @@ const frameElements = JSON.parse(
           : r.x === "centre"
           ? (moldW - w) / 2
           : r.x !== undefined
-          ? Math.round(r.x * mmToPx)
+          ? toUnit(r.x)
           : (r.xFactor ?? 0) * moldW;
 
       const y =
@@ -645,7 +653,7 @@ const frameElements = JSON.parse(
           : r.y === "centre"
           ? (moldH - h) / 2
           : r.y !== undefined
-          ? Math.round(r.y * mmToPx)
+          ? toUnit(r.y)
           : (r.yFactor ?? 0) * moldH;
 
       el.rect = { x, y, width: w, height: h };
