@@ -116,6 +116,7 @@ async function applyFinishToElementGroup({
     baseColor: finish.color || "#ccc",
     textureURL: finish.texture || null,
     textureBlend: finish.textureBlend || "overlay",
+    textureTileSize: finish.frameTileSize ?? finish.woodTileSize ?? (width * 0.6),
     elements,
     mask,
   });
@@ -271,22 +272,22 @@ const frameElements = JSON.parse(
     {
       id: "top-frame",
       mixedRect: { y: 0, height: FRAME_RAIL * RS, xFactor: 0, widthFactor: 1 },
-      options: { imageURL: getImageURL(`frame-x${frameSuffix}`) },
+      options: { imageURL: getImageURL(`frame-x${frameSuffix}`), textureRotation: 0 },
     },
     // Bottom frame — Lorimer: cropped & flipped. Others: standard 17px sill.
     ...(isLorimerCollection ? [{
       id: "bottom-frame",
       rect: { x: 0, y: panelHeight - thresholdVisH, width: panelWidth, height: FRAME_RAIL * RS },
-      options: { imageURL: getImageURL(`frame-x${frameSuffix}`), flipVertical: true },
+      options: { imageURL: getImageURL(`frame-x${frameSuffix}`), flipVertical: true, textureRotation: 0 },
     }] : [{
       id: "bottom-frame",
       mixedRect: { y: "bottom", height: 17 * RS, xFactor: 0, widthFactor: 1 },
-      options: { imageURL: getImageURL(`frame-x${frameSuffix}`) },
+      options: { imageURL: getImageURL(`frame-x${frameSuffix}`), textureRotation: 0 },
     }]),
     {
       id: "left-vertical-frame",
       mixedRect: { x: 0, width: FRAME_RAIL * RS, yFactor: 0, heightFactor: 1 },
-      options: { imageURL: getImageURL(`frame-y${frameSuffix}`) },
+      options: { imageURL: getImageURL(`frame-y${frameSuffix}`), textureRotation: 0 },
     },
     {
       id: "right-vertical-frame",
@@ -294,12 +295,13 @@ const frameElements = JSON.parse(
       options: {
         imageURL: getImageURL(`frame-y${frameSuffix}`),
         flipHorizontal: true,
+        textureRotation: 0,
       },
     },
     {
       id: "top-left-corner",
       rect: { x: 0, y: 0, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
-      options: { imageURL: getImageURL(`frame-corner${frameSuffix}`) },
+      options: { imageURL: getImageURL(`frame-corner${frameSuffix}`), textureRotation: 45 },
     },
     {
       id: "top-right-corner",
@@ -307,6 +309,7 @@ const frameElements = JSON.parse(
       options: {
         imageURL: getImageURL(`frame-corner${frameSuffix}`),
         flipHorizontal: true,
+        textureRotation: 45,
       },
     },
     // Bottom corners — Lorimer: frame-corner flipped, cropped same as threshold.
@@ -315,23 +318,23 @@ const frameElements = JSON.parse(
       {
         id: "bottom-right-corner",
         rect: { x: panelWidth - FRAME_RAIL * RS, y: panelHeight - thresholdVisH, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
-        options: { imageURL: getImageURL(`frame-corner${frameSuffix}`), flipVertical: true, flipHorizontal: true },
+        options: { imageURL: getImageURL(`frame-corner${frameSuffix}`), flipVertical: true, flipHorizontal: true, textureRotation: 45 },
       },
       {
         id: "bottom-left-corner",
         rect: { x: 0, y: panelHeight - thresholdVisH, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
-        options: { imageURL: getImageURL(`frame-corner${frameSuffix}`), flipVertical: true },
+        options: { imageURL: getImageURL(`frame-corner${frameSuffix}`), flipVertical: true, textureRotation: 45 },
       },
     ] : [
       {
         id: "bottom-right-corner",
         rect: { x: "right", y: "bottom", width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
-        options: { imageURL: getImageURL(`frame-y${frameSuffix}`), flipVertical: true, flipHorizontal: true },
+        options: { imageURL: getImageURL(`frame-y${frameSuffix}`), flipVertical: true, flipHorizontal: true, textureRotation: 45 },
       },
       {
         id: "bottom-left-corner",
         rect: { x: 0, y: "bottom", width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
-        options: { imageURL: getImageURL(`frame-y${frameSuffix}`), flipVertical: true },
+        options: { imageURL: getImageURL(`frame-y${frameSuffix}`), flipVertical: true, textureRotation: 45 },
       },
     ]),
   ])

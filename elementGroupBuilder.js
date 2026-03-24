@@ -23,10 +23,63 @@ export async function composeElementGroup({
   baseColor = "#ccc",
   textureURL = null,
   textureBlend = "overlay",
+  textureTileSize = null,   // canvas px per tile; null = stretch to fit
   elements = [],
   mask = null,
 }) {
-  // Step 1: Create canvas for base color + texture
+  // Pre-load texture once and build a reusable tiled pattern (or stretched image)
+  let textureImg = null;
+  let tilePattern = null;
+  let tileCanvas  = null;
+
+  if (textureURL) {
+    textureImg = await loadImage(textureURL);
+    if (textureImg) {
+      if (textureTileSize) {
+        const scale = textureTileSize / textureImg.naturalWidth;
+        const tileW = Math.round(textureImg.naturalWidth  * scale);
+        const tileH = Math.round(textureImg.naturalHeight * scale);
+        tileCanvas = document.createElement("canvas");
+        tileCanvas.width  = tileW;
+        tileCanvas.height = tileH;
+        tileCanvas.getContext("2d").drawImage(textureImg, 0, 0, tileW, tileH);
+      }
+    }
+  }
+
+  // Helper: draw texture (tiled or stretched) onto a context, clipped to a rect,
+  // with an optional rotation (degrees) about the rect centre.
+  function drawTexturePatch(ctx, rect, rotation = 0) {
+    if (!textureImg) return;
+    const cx = rect.x + rect.width  / 2;
+    const cy = rect.y + rect.height / 2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(rect.x, rect.y, rect.width, rect.height);
+    ctx.clip();
+    ctx.translate(cx, cy);
+    ctx.rotate((rotation * Math.PI) / 180);
+
+    if (tileCanvas) {
+      const pat = ctx.createPattern(tileCanvas, "repeat");
+      // Offset the pattern so it tiles from the rotated rect centre
+      const m = new DOMMatrix();
+      m.translateSelf(-tileCanvas.width / 2, -tileCanvas.height / 2);
+      pat.setTransform(m);
+      ctx.fillStyle = pat;
+      // Fill a large enough area to cover the rect after rotation
+      const diag = Math.ceil(Math.sqrt(rect.width ** 2 + rect.height ** 2));
+      ctx.fillRect(-diag, -diag, diag * 2, diag * 2);
+    } else {
+      // Stretched fallback: map full image onto rect (relative to rotated centre)
+      ctx.drawImage(textureImg, -rect.width / 2, -rect.height / 2, rect.width, rect.height);
+    }
+
+    ctx.restore();
+  }
+
+  // Step 1: Create canvas for base color + global texture
   const baseCanvas = document.createElement("canvas");
   baseCanvas.width = width;
   baseCanvas.height = height;
@@ -36,14 +89,11 @@ export async function composeElementGroup({
   baseCtx.fillStyle = baseColor;
   baseCtx.fillRect(0, 0, width, height);
 
-  // Optional texture over base
-  if (textureURL) {
-    const texture = await loadImage(textureURL);
-    if (texture) {
-      baseCtx.globalCompositeOperation = textureBlend;
-      baseCtx.drawImage(texture, 0, 0, width, height);
-      baseCtx.globalCompositeOperation = "source-over";
-    }
+  // Global texture (no rotation — covers the whole canvas for elements without textureRotation)
+  if (textureImg) {
+    baseCtx.globalCompositeOperation = textureBlend;
+    drawTexturePatch(baseCtx, { x: 0, y: 0, width, height }, 0);
+    baseCtx.globalCompositeOperation = "source-over";
   }
 
   // Step 2: Create canvas for all elements
@@ -55,6 +105,19 @@ export async function composeElementGroup({
   for (const el of elements) {
     const rect = resolveElementRect(el, width, height);
     if (!rect) continue;
+
+    // Per-element rotated texture patch (replaces the global texture in this region)
+    const texRot = el.options?.textureRotation;
+    if (texRot !== undefined && textureImg) {
+      // Erase the global texture in this element's rect and redraw it rotated
+      baseCtx.clearRect(rect.x, rect.y, rect.width, rect.height);
+      baseCtx.fillStyle = baseColor;
+      baseCtx.fillRect(rect.x, rect.y, rect.width, rect.height);
+      baseCtx.globalCompositeOperation = textureBlend;
+      drawTexturePatch(baseCtx, rect, texRot);
+      baseCtx.globalCompositeOperation = "source-over";
+    }
+
     const img = await loadImage(el.options?.imageURL);
     if (!img) continue;
 
