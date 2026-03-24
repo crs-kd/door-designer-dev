@@ -1,6 +1,7 @@
 
 import { imageOverloads, doorStyles, state, stepIDs, patioDoorSizeLimits } from "./data.js";
 import { showStep, updateNavigationControls } from "./main.js";
+import { RENDER_SCALE, FRAME_RAIL } from "./constants.js";
 
 /* 
    ---------------------------------------------
@@ -71,7 +72,6 @@ function goToPreviousStep() {
   }
 }
 
-const RENDER_SCALE = 2;
 
 function getScaledPanelSize(inputWidthMM, inputHeightMM) {
   const baseHeightMM = 1980;
@@ -203,7 +203,8 @@ function buildMoldingMask(moldDef, width, height) {
 }
 
 export {
-  RENDER_SCALE,
+  RENDER_SCALE,  // re-exported from constants.js
+  FRAME_RAIL,    // re-exported from constants.js
   getImageURL,
   loadImage,
   tintImage,

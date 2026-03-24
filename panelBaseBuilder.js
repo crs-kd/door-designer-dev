@@ -1,5 +1,6 @@
 // panelBaseBuilder.js
 import { loadImage, getImageURL, RENDER_SCALE } from "./utils.js";
+import { FRAME_RAIL } from "./constants.js";
 
 /**
  * Procedurally draws groove lines onto an existing canvas context.
@@ -18,8 +19,8 @@ export async function drawGrooves(ctx, width, height, textureDef) {
 
   const RS      = RENDER_SCALE;
   const count   = textureDef.count   ?? 6;
-  const marginX = (textureDef.marginX ?? 35) * RS;
-  const marginY = (textureDef.marginY ?? 35) * RS;
+  const marginX = (textureDef.marginX ?? FRAME_RAIL) * RS;
+  const marginY = (textureDef.marginY ?? FRAME_RAIL) * RS;
 
   const innerW = width  - marginX * 2;
   const innerH = height - marginY * 2;
@@ -55,8 +56,8 @@ export async function drawGrooves(ctx, width, height, textureDef) {
     const grooveSpacing = 34 * RS;
 
     // Use separate top/bottom margins to match the actual frame thicknesses
-    const marginTop    = (textureDef.marginTop    ?? textureDef.marginY ?? 35) * RS;
-    const marginBottom = (textureDef.marginBottom ?? textureDef.marginY ?? 35) * RS;
+    const marginTop    = (textureDef.marginTop    ?? textureDef.marginY ?? FRAME_RAIL) * RS;
+    const marginBottom = (textureDef.marginBottom ?? textureDef.marginY ?? FRAME_RAIL) * RS;
     const visibleH     = height - marginTop - marginBottom;
 
     const grooveMarginX = marginX * 0.4;

@@ -1,4 +1,5 @@
 import { getImageURL } from "./utils.js";
+import { FRAME_RAIL } from "./constants.js";
 /* 
    ---------------------------------------------
    Global Data & Definitions
@@ -573,7 +574,7 @@ const doorStyles = [
     sidescreenOptions: ["full", "midrail"],
     glazingLayout: {
       // frameInset values are in "base pixels" (multiplied by RENDER_SCALE in renderer)
-      frameInset: { side: 35, top: 35 },
+      frameInset: { side: FRAME_RAIL, top: FRAME_RAIL },
     },
     glazingOptions: [
       "clear", "adina", "eden", "graphite", "harmony", "iris",
@@ -603,9 +604,9 @@ const doorStyles = [
     sidescreenOptions: ["full", "midrail"],
     glazingLayout: [
       // Zone 1: glass above the midrail (from top-frame inner edge to midrail top)
-      { midInset: { above: true, side: 35, top: 35 } },
+      { midInset: { above: true, side: FRAME_RAIL, top: FRAME_RAIL } },
       // Zone 2: glass below the midrail (from midrail bottom to sill inner edge)
-      { midInset: { above: false, side: 35, bottom: 17 } },
+      { midInset: { above: false, side: FRAME_RAIL } },
     ],
     glazingOptions: [
       "clear", "adina", "eden", "graphite", "harmony", "iris",
@@ -635,7 +636,7 @@ const doorStyles = [
     sidescreenOptions: ["full", "midrail"],
     glazingLayout: [
       // Glass only above the midrail; below is solid (door finish shows through)
-      { midInset: { above: true, side: 35, top: 35 } },
+      { midInset: { above: true, side: FRAME_RAIL, top: FRAME_RAIL } },
     ],
     glazingOptions: [
       "clear", "adina", "eden", "graphite", "harmony", "iris",
@@ -783,15 +784,15 @@ const textureDefs = [
   {
     id: "horizontal",
     count: 16,     // 16 groove lines (pre-made panel, fixed pitch)
-    marginX: 35,
-    marginTop: 35, // matches top frame thickness
-    marginBottom: 17, // matches bottom threshold frame thickness
+    marginX: FRAME_RAIL,
+    marginTop: FRAME_RAIL, // matches top frame thickness
+    marginBottom: 17, // matches bottom threshold frame thickness (Allure/Elegance fixed sill)
   },
   {
     id: "vertical",
     count: 6,
-    marginX: 35,
-    marginY: 35,
+    marginX: FRAME_RAIL,
+    marginY: FRAME_RAIL,
   },
 ];
 
@@ -820,32 +821,32 @@ const moldingDefs = [
       },
       {
         id: "left-mid-frame",
-        rect: { x: 0, y: 0, width: 35, heightFactor: 1 },
+        rect: { x: 0, y: 0, width: FRAME_RAIL, heightFactor: 1 },
         options: { imageURL: getImageURL("frame-y") },
       },
       {
         id: "right-mid-frame",
-        rect: { x: "right", y: 0, width: 35, heightFactor: 1 },
+        rect: { x: "right", y: 0, width: FRAME_RAIL, heightFactor: 1 },
         options: { imageURL: getImageURL("frame-y"), flipHorizontal: true },
       },
       {
         id: "left-top-transom-end",
-        rect: { x: 0, y: 0, width: 35, height: 20 },
+        rect: { x: 0, y: 0, width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipVertical: false },
       },
       {
         id: "right-top-transom-end",
-        rect: { x: "right", y: 0, width: 35, height: 20 },
+        rect: { x: "right", y: 0, width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipHorizontal: true },
       },
       {
         id: "left-bottom-transom-end",
-        rect: { x: 0, y: "bottom", width: 35, height: 20 },
+        rect: { x: 0, y: "bottom", width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipVertical: false },
       },
       {
         id: "right-bottm-transom-end",
-        rect: { x: "right", y: "bottom", width: 35, height: 20 },
+        rect: { x: "right", y: "bottom", width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipHorizontal: true },
       },
     ],
@@ -879,32 +880,32 @@ const moldingDefs = [
       },
       {
         id: "left-mid-frame",
-        rect: { x: 0, y: 0, width: 35, heightFactor: 1 },
+        rect: { x: 0, y: 0, width: FRAME_RAIL, heightFactor: 1 },
         options: { imageURL: getImageURL("frame-y") },
       },
       {
         id: "right-mid-frame",
-        rect: { x: "right", y: 0, width: 35, heightFactor: 1 },
+        rect: { x: "right", y: 0, width: FRAME_RAIL, heightFactor: 1 },
         options: { imageURL: getImageURL("frame-y"), flipHorizontal: true },
       },
       {
         id: "left-top-transom-end",
-        rect: { x: 0, y: 0, width: 35, height: 20 },
+        rect: { x: 0, y: 0, width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipVertical: false },
       },
       {
         id: "right-top-transom-end",
-        rect: { x: "right", y: 0, width: 35, height: 20 },
+        rect: { x: "right", y: 0, width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipHorizontal: true },
       },
       {
         id: "left-bottom-transom-end",
-        rect: { x: 0, y: "bottom", width: 35, height: 20 },
+        rect: { x: 0, y: "bottom", width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipVertical: false },
       },
       {
         id: "right-bottom-transom-end",
-        rect: { x: "right", y: "bottom", width: 35, height: 20 },
+        rect: { x: "right", y: "bottom", width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipHorizontal: true },
       },
     ],
@@ -2130,32 +2131,32 @@ const sidescreenStyleDefs = [
       },
       {
         id: "left-mid-frame",
-        rect: { x: 0, y: 0, width: 35, heightFactor: 1 },
+        rect: { x: 0, y: 0, width: FRAME_RAIL, heightFactor: 1 },
         options: { imageURL: getImageURL("frame-y")},
       },
       {
         id: "right-mid-frame",
-        rect: { x: "right", y: 0, width: 35, heightFactor: 1 },
+        rect: { x: "right", y: 0, width: FRAME_RAIL, heightFactor: 1 },
         options: { imageURL: getImageURL("frame-y"), flipHorizontal: true  },
       },
       {
         id: "left-top-transom-end",
-        rect: { x: 0, y: 0, width: 35, height: 20 },
+        rect: { x: 0, y: 0, width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end") },
       },
       {
         id: "right-top-transom-end",
-        rect: { x: "right", y: 0, width: 35, height: 20 },
+        rect: { x: "right", y: 0, width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipHorizontal: true },
       },
       {
         id: "left-bottom-transom-end",
-        rect: { x: 0, y: "bottom", width: 35, height: 20 },
+        rect: { x: 0, y: "bottom", width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipVertical: false },
       },
       {
         id: "right-bottm-transom-end",
-        rect: { x: "right", y: "bottom", width: 35, height: 20 },
+        rect: { x: "right", y: "bottom", width: FRAME_RAIL, height: 20 },
         options: { imageURL: getImageURL("transom-end"), flipHorizontal: true },
       },
     ],
@@ -2166,22 +2167,22 @@ const sidescreenGlazingDefs = [
   {
     id: "clear",
     image: "clear",
-    margin: 35,
+    margin: FRAME_RAIL,
   },
   {
     id: "digital",
     image: "digital",
-    margin: 35,
+    margin: FRAME_RAIL,
   },
     {
     id: "contora",
     image: "contora",
-    margin: 35,
+    margin: FRAME_RAIL,
   },
     {
     id: "charcoal",
     image: "charcoal",
-    margin: 35,
+    margin: FRAME_RAIL,
   },
 ];
 

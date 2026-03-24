@@ -1,5 +1,6 @@
 import {
   RENDER_SCALE,
+  FRAME_RAIL,
   getImageURL,
   loadImage,
   tintImage,
@@ -144,7 +145,7 @@ async function applyFinishToElementGroup({
  * @param {number} frameBottom  - Bottom frame thickness (px)
  * @param {number} frameSide    - Left/right frame thickness (px)
  */
-function drawFrameEdgeLighting(ctx, w, h, frameTop = 35, frameBottom = 17, frameSide = 35) {
+function drawFrameEdgeLighting(ctx, w, h, frameTop = FRAME_RAIL, frameBottom = 17, frameSide = FRAME_RAIL) {
   const RS          = RENDER_SCALE;
   const reach       = 10 * RS;   // px — how far shadows/highlights bleed into the panel
   const hiAlpha     = 0.06; // highlight intensity
@@ -261,20 +262,20 @@ async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish)
   // All other collections keep the original 17*RS sill.
   const isLorimerCollection = styleObj?.collection === "Lorimer";
   const thresholdVisH = isLorimerCollection
-    ? Math.round(35 * RS * 0.70)  // Lorimer: ~30% cropped off
+    ? Math.round(FRAME_RAIL * RS * 0.70)  // Lorimer: ~30% cropped off
     : 17 * RS;                     // Allure / Elegance: original sill height
 
 const frameElements = JSON.parse(
   JSON.stringify([
     {
       id: "top-frame",
-      mixedRect: { y: 0, height: 35 * RS, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: 0, height: FRAME_RAIL * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL(`frame-x${frameSuffix}`) },
     },
     // Bottom frame — Lorimer: cropped & flipped. Others: standard 17px sill.
     ...(isLorimerCollection ? [{
       id: "bottom-frame",
-      rect: { x: 0, y: panelHeight - thresholdVisH, width: panelWidth, height: 35 * RS },
+      rect: { x: 0, y: panelHeight - thresholdVisH, width: panelWidth, height: FRAME_RAIL * RS },
       options: { imageURL: getImageURL(`frame-x${frameSuffix}`), flipVertical: true },
     }] : [{
       id: "bottom-frame",
@@ -283,12 +284,12 @@ const frameElements = JSON.parse(
     }]),
     {
       id: "left-vertical-frame",
-      mixedRect: { x: 0, width: 35 * RS, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: 0, width: FRAME_RAIL * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL(`frame-y${frameSuffix}`) },
     },
     {
       id: "right-vertical-frame",
-      mixedRect: { x: "right", width: 35 * RS, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: "right", width: FRAME_RAIL * RS, yFactor: 0, heightFactor: 1 },
       options: {
         imageURL: getImageURL(`frame-y${frameSuffix}`),
         flipHorizontal: true,
@@ -296,12 +297,12 @@ const frameElements = JSON.parse(
     },
     {
       id: "top-left-corner",
-      rect: { x: 0, y: 0, width: 35 * RS, height: 35 * RS },
+      rect: { x: 0, y: 0, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: { imageURL: getImageURL(`frame-corner${frameSuffix}`) },
     },
     {
       id: "top-right-corner",
-      rect: { x: "right", y: 0, width: 35 * RS, height: 35 * RS },
+      rect: { x: "right", y: 0, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: {
         imageURL: getImageURL(`frame-corner${frameSuffix}`),
         flipHorizontal: true,
@@ -312,23 +313,23 @@ const frameElements = JSON.parse(
     ...(isLorimerCollection ? [
       {
         id: "bottom-right-corner",
-        rect: { x: panelWidth - 35 * RS, y: panelHeight - thresholdVisH, width: 35 * RS, height: 35 * RS },
+        rect: { x: panelWidth - FRAME_RAIL * RS, y: panelHeight - thresholdVisH, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
         options: { imageURL: getImageURL(`frame-corner${frameSuffix}`), flipVertical: true, flipHorizontal: true },
       },
       {
         id: "bottom-left-corner",
-        rect: { x: 0, y: panelHeight - thresholdVisH, width: 35 * RS, height: 35 * RS },
+        rect: { x: 0, y: panelHeight - thresholdVisH, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
         options: { imageURL: getImageURL(`frame-corner${frameSuffix}`), flipVertical: true },
       },
     ] : [
       {
         id: "bottom-right-corner",
-        rect: { x: "right", y: "bottom", width: 35 * RS, height: 35 * RS },
+        rect: { x: "right", y: "bottom", width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
         options: { imageURL: getImageURL(`frame-y${frameSuffix}`), flipVertical: true, flipHorizontal: true },
       },
       {
         id: "bottom-left-corner",
-        rect: { x: 0, y: "bottom", width: 35 * RS, height: 35 * RS },
+        rect: { x: 0, y: "bottom", width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
         options: { imageURL: getImageURL(`frame-y${frameSuffix}`), flipVertical: true },
       },
     ]),
@@ -351,7 +352,7 @@ const frameElements = JSON.parse(
   });
   finalCtx.drawImage(frameCanvas, 0, 0);
   finalCtx.globalCompositeOperation = "source-over";
-  drawFrameEdgeLighting(finalCtx, panelWidth, panelHeight, 35 * RS, thresholdVisH, 35 * RS);
+  drawFrameEdgeLighting(finalCtx, panelWidth, panelHeight, FRAME_RAIL * RS, thresholdVisH, FRAME_RAIL * RS);
 
   // Metal threshold overlay — Allure & Elegance only (Lorimer uses the cropped frame-x instead)
   if (!isLorimerCollection) {
@@ -391,7 +392,7 @@ const frameElements = JSON.parse(
         // ── Resolve zone position and size ──────────────────────────────────
         // frameInset: glass fills inner frame opening.
         //   Values are in "base pixels × RS" to match how the frame rails are
-        //   drawn (e.g. 35 * RS for the side/top rail, 17 * RS for the sill).
+        //   drawn (e.g. FRAME_RAIL * RS for the side/top rail, 17 * RS for the sill).
         // midInset: glass zone above or below the centred lorimer-midrail.
         //   above:true → from top-frame inner edge to midrail top edge.
         //   below:true → from midrail bottom edge to bottom-frame inner edge.
@@ -416,11 +417,11 @@ const frameElements = JSON.parse(
           const midrailCenter = panelHeight / 2 + 75 * RS;
           const midrailTop    = midrailCenter - midrailH / 2;
           const midrailBot    = midrailCenter + midrailH / 2;
-          const lx = (mi.side ?? 35) * RS;
+          const lx = (mi.side ?? FRAME_RAIL) * RS;
           glazeX = lx;
           width  = panelWidth - lx * 2;
           if (mi.above) {
-            const ty = (mi.top ?? 35) * RS;
+            const ty = (mi.top ?? FRAME_RAIL) * RS;
             glazeY = ty;
             height = Math.round(Math.max(0, midrailTop - ty));
           } else {
@@ -518,6 +519,39 @@ const frameElements = JSON.parse(
           }
         } else if (sharedImg) {
           glazeCtx.drawImage(sharedImg, 0, 0, width, height);
+        }
+
+        // ── Realistic glass effects (clear / plain zones only) ───────────────
+        if (!layout.elements?.length) {
+          // 1. Subtle blue-green glass tint
+          glazeCtx.fillStyle = "rgba(165, 200, 210, 0.07)";
+          glazeCtx.fillRect(0, 0, width, height);
+
+          // 2. Inset edge shadows — glass sitting in rebate
+          const inset = 7 * RS;
+          const shadowEdges = [
+            { grad: [0, 0, inset, 0],        rect: [0,            0,      inset, height] }, // left
+            { grad: [width, 0, width-inset,0],rect: [width-inset,  0,      inset, height] }, // right
+            { grad: [0, 0, 0, inset],          rect: [0,            0,      width, inset]  }, // top
+            { grad: [0, height, 0, height-inset], rect: [0, height-inset, width, inset]  }, // bottom
+          ];
+          const edgeAlphas = [0.20, 0.20, 0.22, 0.16];
+          shadowEdges.forEach(({ grad, rect }, i) => {
+            const g = glazeCtx.createLinearGradient(...grad);
+            g.addColorStop(0, `rgba(0,0,0,${edgeAlphas[i]})`);
+            g.addColorStop(1, "rgba(0,0,0,0)");
+            glazeCtx.fillStyle = g;
+            glazeCtx.fillRect(...rect);
+          });
+
+          // 3. Diagonal specular highlight — top-left ambient reflection
+          const hiSpan = Math.min(width, height) * 0.55;
+          const hi = glazeCtx.createLinearGradient(0, 0, hiSpan, hiSpan);
+          hi.addColorStop(0,   "rgba(255,255,255,0.11)");
+          hi.addColorStop(0.4, "rgba(255,255,255,0.04)");
+          hi.addColorStop(1,   "rgba(255,255,255,0)");
+          glazeCtx.fillStyle = hi;
+          glazeCtx.fillRect(0, 0, width, height);
         }
 
         finalCtx.drawImage(glazeCanvas, glazeX, glazeY);
@@ -914,42 +948,42 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
   const frameElements = [
     {
       id: "top-frame",
-      mixedRect: { y: 0, height: 35 * RS, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: 0, height: FRAME_RAIL * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL("frame-x") },
     },
     {
       id: "bottom-frame",
-      mixedRect: { y: "bottom", height: 35 * RS, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: "bottom", height: FRAME_RAIL * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL("frame-x"), flipVertical: true },
     },
     {
       id: "left-frame",
-      mixedRect: { x: 0, width: 35 * RS, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: 0, width: FRAME_RAIL * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame-y") },
     },
     {
       id: "right-frame",
-      mixedRect: { x: "right", width: 35 * RS, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: "right", width: FRAME_RAIL * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame-y"), flipHorizontal: true },
     },
     {
       id: "top-left",
-      rect: { x: 0, y: 0, width: 35 * RS, height: 35 * RS },
+      rect: { x: 0, y: 0, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: { imageURL: getImageURL("frame-corner") },
     },
     {
       id: "top-right",
-      rect: { x: "right", y: 0, width: 35 * RS, height: 35 * RS },
+      rect: { x: "right", y: 0, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: { imageURL: getImageURL("frame-corner"), flipHorizontal: true },
     },
     {
       id: "bottom-left",
-      rect: { x: 0, y: "bottom", width: 35 * RS, height: 35 * RS },
+      rect: { x: 0, y: "bottom", width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: { imageURL: getImageURL("frame-corner"), flipVertical: true },
     },
     {
       id: "bottom-right",
-      rect: { x: "right", y: "bottom", width: 35 * RS, height: 35 * RS },
+      rect: { x: "right", y: "bottom", width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: {
         imageURL: getImageURL("frame-corner"),
         flipVertical: true,
@@ -1009,7 +1043,7 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
       JSON.stringify(sidescreenStyle.midFrameElements)
     );
     const groupWidth = targetWidth;
-    const groupHeight = (sidescreenStyle.midFrameHeight ?? 35) * RS;
+    const groupHeight = (sidescreenStyle.midFrameHeight ?? FRAME_RAIL) * RS;
     const offsetY = (sidescreenStyle.midFrameOffsetY ?? 0) * RS;
 
     // Update all elements to ensure rects are absolute
@@ -1286,42 +1320,42 @@ async function buildFanlightComposite(targetWidth, targetHeight, frameFinish, fi
   const frameElements = [
     {
       id: "top-frame",
-      mixedRect: { y: 0, height: 35 * RS, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: 0, height: FRAME_RAIL * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL("frame-x") },
     },
     {
       id: "bottom-frame",
-      mixedRect: { y: "bottom", height: 35 * RS, xFactor: 0, widthFactor: 1 },
+      mixedRect: { y: "bottom", height: FRAME_RAIL * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL("frame-x"), flipVertical: true },
     },
     {
       id: "left-frame",
-      mixedRect: { x: 0, width: 35 * RS, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: 0, width: FRAME_RAIL * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame-y") },
     },
     {
       id: "right-frame",
-      mixedRect: { x: "right", width: 35 * RS, yFactor: 0, heightFactor: 1 },
+      mixedRect: { x: "right", width: FRAME_RAIL * RS, yFactor: 0, heightFactor: 1 },
       options: { imageURL: getImageURL("frame-y"), flipHorizontal: true },
     },
     {
       id: "top-left",
-      rect: { x: 0, y: 0, width: 35 * RS, height: 35 * RS },
+      rect: { x: 0, y: 0, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: { imageURL: getImageURL("frame-corner") },
     },
     {
       id: "top-right",
-      rect: { x: "right", y: 0, width: 35 * RS, height: 35 * RS },
+      rect: { x: "right", y: 0, width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: { imageURL: getImageURL("frame-corner"), flipHorizontal: true },
     },
     {
       id: "bottom-left",
-      rect: { x: 0, y: "bottom", width: 35 * RS, height: 35 * RS },
+      rect: { x: 0, y: "bottom", width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: { imageURL: getImageURL("frame-corner"), flipVertical: true },
     },
     {
       id: "bottom-right",
-      rect: { x: "right", y: "bottom", width: 35 * RS, height: 35 * RS },
+      rect: { x: "right", y: "bottom", width: FRAME_RAIL * RS, height: FRAME_RAIL * RS },
       options: {
         imageURL: getImageURL("frame-corner"),
         flipVertical: true,
