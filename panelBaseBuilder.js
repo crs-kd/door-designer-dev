@@ -101,8 +101,10 @@ export async function createBasePanel({
   height,
   baseColor = "#ccc",
   woodTextureURL = null,
+  woodTileSize = null,   // canvas px per tile; null = stretch to fit (legacy)
   grooveTextureDef = null,
 }) {
+  const RS = RENDER_SCALE;
   const canvas = document.createElement("canvas");
   canvas.width  = width;
   canvas.height = height;
@@ -117,7 +119,26 @@ export async function createBasePanel({
     const woodImg = await loadImage(woodTextureURL);
     if (woodImg) {
       ctx.globalCompositeOperation = "overlay";
-      ctx.drawImage(woodImg, 0, 0, width, height);
+
+      if (woodTileSize) {
+        // Tileable: scale the image to woodTileSize × woodTileSize then repeat
+        const scale = woodTileSize / woodImg.naturalWidth;
+        const tileW = Math.round(woodImg.naturalWidth  * scale);
+        const tileH = Math.round(woodImg.naturalHeight * scale);
+
+        const tileCanvas = document.createElement("canvas");
+        tileCanvas.width  = tileW;
+        tileCanvas.height = tileH;
+        tileCanvas.getContext("2d").drawImage(woodImg, 0, 0, tileW, tileH);
+
+        const pattern = ctx.createPattern(tileCanvas, "repeat");
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, width, height);
+      } else {
+        // Legacy: stretch to fill
+        ctx.drawImage(woodImg, 0, 0, width, height);
+      }
+
       ctx.globalCompositeOperation = "source-over";
     }
   }

@@ -201,6 +201,7 @@ async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish)
     height: panelHeight,
     baseColor: finish.color || "#ccc",
     woodTextureURL: finish.texture || null,
+    woodTileSize: finish.woodTileSize ?? (panelWidth * 0.6),
     grooveTextureDef,
   });
   const finalCtx = finalCanvas.getContext("2d");
@@ -900,12 +901,24 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
   finalCtx.fillStyle = baseColor;
   finalCtx.fillRect(0, 0, targetWidth, targetHeight);
 
-  // Step 2: Texture
+  // Step 2: Texture (tiled)
   if (textureURL) {
     const textureImg = await loadImage(textureURL);
     if (textureImg) {
+      const tileSize = frameFinish.woodTileSize ?? (targetWidth * 0.6);
+      const scale = tileSize / textureImg.naturalWidth;
+      const tileW = Math.round(textureImg.naturalWidth  * scale);
+      const tileH = Math.round(textureImg.naturalHeight * scale);
+
+      const tileCanvas = document.createElement("canvas");
+      tileCanvas.width  = tileW;
+      tileCanvas.height = tileH;
+      tileCanvas.getContext("2d").drawImage(textureImg, 0, 0, tileW, tileH);
+
+      const pattern = finalCtx.createPattern(tileCanvas, "repeat");
       finalCtx.globalCompositeOperation = textureBlend;
-      finalCtx.drawImage(textureImg, 0, 0, targetWidth, targetHeight);
+      finalCtx.fillStyle = pattern;
+      finalCtx.fillRect(0, 0, targetWidth, targetHeight);
       finalCtx.globalCompositeOperation = "source-over";
     }
   }
