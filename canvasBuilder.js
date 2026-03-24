@@ -705,7 +705,13 @@ const frameElements = JSON.parse(
           ? null
           : buildMoldingMask({ elements: moldingElements }, moldW, moldH),
     });
+    finalCtx.save();
+    finalCtx.shadowColor = "rgba(0,0,0,0.15)";
+    finalCtx.shadowBlur = 1 * RS;
+    finalCtx.shadowOffsetX = 5;
+    finalCtx.shadowOffsetY = 2 * RS;
     finalCtx.drawImage(moldingCanvas, moldX, moldY);
+    finalCtx.restore();
     finalCtx.globalCompositeOperation = "source-over";
   }
   } // end molding loop
@@ -731,7 +737,7 @@ const frameElements = JSON.parse(
 
         finalCtx.save();
         finalCtx.shadowColor = "rgba(0,0,0,0.35)";
-        finalCtx.shadowBlur = 2 * RS;
+        finalCtx.shadowBlur = 3 * RS;
         finalCtx.shadowOffsetX = 2 * RS;
         finalCtx.shadowOffsetY = 6 * RS;
         if (isLeft) {
