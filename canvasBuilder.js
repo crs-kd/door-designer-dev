@@ -201,7 +201,7 @@ async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish)
     height: panelHeight,
     baseColor: finish.color || "#ccc",
     woodTextureURL: finish.texture || null,
-    woodTileSize: finish.woodTileSize ?? (panelWidth * 0.2),
+    woodTileSize: finish.woodTileSize ?? (panelWidth * 0.4),
     grooveTextureDef,
   });
   const finalCtx = finalCanvas.getContext("2d");
