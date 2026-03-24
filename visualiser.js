@@ -17,6 +17,7 @@ const resizeHandleSize = 20;
 let doorOverlayIsHovering = false;
 let initialPinchDistance = null;
 let initialPinchScale = null;
+let doorOverlayVisible = true;
 
 function updateDoorOverlayCanvasSize() {
   const visualiserContent = document.getElementById("visualiserContent");
@@ -26,11 +27,23 @@ function updateDoorOverlayCanvasSize() {
   doorCanvas.height = rect.height;
 }
 
+function toggleDoorVisibility() {
+  doorOverlayVisible = !doorOverlayVisible;
+  const canvas = document.getElementById("doorOverlayCanvas");
+  if (canvas) canvas.style.visibility = doorOverlayVisible ? "visible" : "hidden";
+  const openIcon   = document.getElementById("eyeOpenIcon");
+  const closedIcon = document.getElementById("eyeClosedIcon");
+  if (openIcon)   openIcon.style.display   = doorOverlayVisible ? "none" : "";
+  if (closedIcon) closedIcon.style.display = doorOverlayVisible ? "" : "none";
+  const btn = document.getElementById("toggleDoorVisibilityBtn");
+  if (btn) btn.style.opacity = doorOverlayVisible ? "1" : "0.4";
+}
+
 function updateDoorOverlay() {
   const doorCanvas = document.getElementById("doorOverlayCanvas");
   const doorCtx = doorCanvas.getContext("2d");
   doorCtx.clearRect(0, 0, doorCanvas.width, doorCanvas.height);
-  if (!doorOverlayImg) return;
+  if (!doorOverlayImg || !doorOverlayVisible) return;
   const width = doorOverlayImg.width * doorOverlayScale;
   const height = doorOverlayImg.height * doorOverlayScale;
   doorCtx.drawImage(doorOverlayImg, doorOverlayOffset.x, doorOverlayOffset.y, width, height);
@@ -57,8 +70,14 @@ function initializeDoorOverlay() {
   newImg.onload = function () {
     if (!doorOverlayImg) {
       const vcRect = document.getElementById("visualiserContent").getBoundingClientRect();
-      doorOverlayOffset = { x: (vcRect.width - newImg.width) / 2, y: (vcRect.height - newImg.height) / 2 };
-      doorOverlayScale = 1.0;
+      const fitScale = Math.min(
+        (vcRect.height * 0.75) / newImg.height,
+        (vcRect.width  * 0.75) / newImg.width
+      );
+      doorOverlayScale = fitScale;
+      const scaledW = newImg.width  * fitScale;
+      const scaledH = newImg.height * fitScale;
+      doorOverlayOffset = { x: (vcRect.width - scaledW) / 2, y: (vcRect.height - scaledH) / 2 };
     }
     doorOverlayImg = newImg;
     updateDoorOverlay();
@@ -71,8 +90,14 @@ function updateDoorOverlayImage() {
   newImg.onload = function () {
     if (!doorOverlayImg) {
       const vcRect = document.getElementById("visualiserContent").getBoundingClientRect();
-      doorOverlayOffset = { x: (vcRect.width - newImg.width) / 2, y: (vcRect.height - newImg.height) / 2 };
-      doorOverlayScale = 1.0;
+      const fitScale = Math.min(
+        (vcRect.height * 0.75) / newImg.height,
+        (vcRect.width  * 0.75) / newImg.width
+      );
+      doorOverlayScale = fitScale;
+      const scaledW = newImg.width  * fitScale;
+      const scaledH = newImg.height * fitScale;
+      doorOverlayOffset = { x: (vcRect.width - scaledW) / 2, y: (vcRect.height - scaledH) / 2 };
     }
     doorOverlayImg = newImg;
     updateDoorOverlay();
@@ -268,7 +293,8 @@ export {
   updateDoorOverlay,
   updateDoorOverlayCanvasSize,
   updateBackgroundCanvas,
-  doorOverlayMouseDown,            
+  toggleDoorVisibility,
+  doorOverlayMouseDown,
   doorOverlayMouseMove,
   doorOverlayMouseUp,
   doorOverlayTouchStart,

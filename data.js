@@ -860,6 +860,7 @@ const moldingDefs = [
     blockAnchor: "centre",
     offsetX: 0,
     offsetYFactor: 0.5,
+    offsetYRS: 75,
     mask: false,
     elements: [
       {

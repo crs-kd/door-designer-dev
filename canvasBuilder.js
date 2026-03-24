@@ -56,6 +56,7 @@ import {
   updateBackgroundCanvas,
   updateDoorOverlay,
   initializeDoorOverlay,
+  toggleDoorVisibility,
 } from "./visualiser.js";
 
 import {
@@ -868,9 +869,10 @@ if (state.currentView === "internal") {
         const lpX = (panelWidth - lpW) / 2;
 
         // Lorimer midrail styles: lock letterplate to midrail centre
+        // midrailCentreY = pH/2 + 75*RS  (matches offsetYFactor:0.5 + offsetYRS:75 + blockAnchor:"centre")
         const hasLorimerMidrail = styleObj?.styleAssets?.moldings?.includes("lorimer-midrail");
         const lpY = hasLorimerMidrail
-          ? Math.round(panelHeight / 2 - lpH / 2)
+          ? Math.round(panelHeight / 2 + 75 * RS - lpH / 2)
           : Math.round(panelHeight - lpH - lpDef.offsetY * mmToPx);
 
         const tintedPlate = tintImage(
@@ -2582,6 +2584,8 @@ document.addEventListener("DOMContentLoaded", () => {
   //   updateCanvasPreview();
   //   updateSummary(); // if summary reflects the glazing state
   // });
+
+  document.getElementById("toggleDoorVisibilityBtn").addEventListener("click", toggleDoorVisibility);
 
   document.getElementById("toggleBackBtn").addEventListener("click", () => {
     document.getElementById("visualiserMode").style.display = "none";

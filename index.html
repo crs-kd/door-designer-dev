@@ -371,8 +371,10 @@
         position: relative;
       }
       #previewCanvas {
-        max-width: 50%;
-        max-height: 80%;
+        max-width: 45vw;
+        max-height: 82vh;
+        width: auto;
+        height: auto;
       }
       .vertical-icon-bar {
         position: absolute;
@@ -730,6 +732,19 @@
           "
         >
           <i class="fa-solid fa-floppy-disk"></i>
+        </button>
+        <button
+          id="toggleDoorVisibilityBtn"
+          title="Toggle door on/off"
+          style="
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+          "
+        >
+          <i id="eyeOpenIcon"   class="fa-solid fa-eye" style="display:none"></i>
+          <i id="eyeClosedIcon" class="fa-solid fa-eye-slash"></i>
         </button>
         <button
           id="toggleBackBtn"
