@@ -730,6 +730,10 @@ const frameElements = JSON.parse(
         );
 
         finalCtx.save();
+        finalCtx.shadowColor = "rgba(0,0,0,0.35)";
+        finalCtx.shadowBlur = 8 * RS;
+        finalCtx.shadowOffsetX = 2 * RS;
+        finalCtx.shadowOffsetY = 3 * RS;
         if (isLeft) {
           finalCtx.translate(hX + hW / 2, hY + hH / 2);
           finalCtx.scale(-1, 1); // Mirror horizontally
