@@ -127,6 +127,12 @@ async function _drawArchFrame(ctx, w, h, shape, finish) {
 
   // Arch inner edge: shadow strip along the inside of the arch
   _drawArchInnerShadow(ctx, cx, ah, rx, ry, depth);
+
+  // ── 4. Extrusion channel profile ────────────────────────────────────────
+  // Applies a multi-channel UPVC extrusion gradient to each rail face.
+  // source-atop means the gradient only draws on solid (non-transparent) pixels —
+  // the punched opening is already transparent so it won't be affected.
+  _applyExtrusionProfile(ctx, w, h, t, ah, rx, ry);
 }
 
 /**
@@ -151,6 +157,98 @@ function _drawArchInnerShadow(ctx, cx, cy, rx, ry, depth) {
   ctx.fillRect(cx - rx - depth, cy - ry - depth, (rx + depth) * 2, ry + depth * 2);
 
   ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Extrusion profile helper
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Applies a multi-channel UPVC extrusion gradient to each rail face of an arch frame.
+ *
+ * - Side rails (below arch spring line): linear gradient across the rail width
+ * - Bottom rail: linear gradient up the rail height
+ * - Arch rail: radial gradient in a scaled coordinate system so it follows the
+ *   ellipse exactly. The technique: translate to (cx, ah), scale y by (ry/rx) to
+ *   turn the ellipse into a circle, apply a circular radial gradient — on restore
+ *   the inverse scale maps the gradient back onto the ellipse correctly.
+ *
+ * Uses source-atop — only draws on solid (non-transparent) pixels.
+ */
+function _applyExtrusionProfile(ctx, w, h, t, ah, rx, ry) {
+  ctx.save();
+  ctx.globalCompositeOperation = "source-atop";
+
+  const nCh = 3;
+  const cx  = w / 2;
+
+  // ── Left rail: horizontal gradient across rail width (rectangular portion only) ──
+  {
+    const g = ctx.createLinearGradient(0, 0, t, 0);
+    _channelStops(g, nCh);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, ah, t, h - ah - t);
+  }
+
+  // ── Right rail: mirrored horizontal gradient ──────────────────────────────
+  {
+    const g = ctx.createLinearGradient(w, 0, w - t, 0);
+    _channelStops(g, nCh);
+    ctx.fillStyle = g;
+    ctx.fillRect(w - t, ah, t, h - ah - t);
+  }
+
+  // ── Bottom rail: vertical gradient up the rail height ────────────────────
+  {
+    const g = ctx.createLinearGradient(0, h, 0, h - t);
+    _channelStops(g, nCh);
+    ctx.fillStyle = g;
+    ctx.fillRect(t, h - t, w - 2 * t, t);
+  }
+
+  // ── Arch rail: radial gradient that follows the elliptical curve ──────────
+  // We translate to the arch centre and scale y by (ry/rx) so the ellipse (rx, ry)
+  // becomes a circle of radius rx.  A circular radial gradient then maps back to
+  // an elliptical one that precisely tracks the arch rail thickness.
+  {
+    ctx.save();
+    ctx.translate(cx, ah);
+    ctx.scale(1, ry / rx);   // ellipse → circle of radius rx in this space
+
+    // Clip to circular annulus (= elliptical arch annulus in original space)
+    ctx.beginPath();
+    ctx.arc(0, 0, rx + t, Math.PI, 0, false);  // outer boundary
+    ctx.arc(0, 0, rx,     0, Math.PI, true);   // inner boundary (reversed)
+    ctx.closePath();
+    ctx.clip();
+
+    // Radial channel gradient from inner (rx) to outer (rx + t) edge
+    const g = ctx.createRadialGradient(0, 0, rx, 0, 0, rx + t);
+    _channelStops(g, nCh);
+    ctx.fillStyle = g;
+    ctx.fillRect(-(rx + t), -(rx + t), (rx + t) * 2, rx + t * 2);
+
+    ctx.restore();  // undo translate + scale (clip is also released)
+  }
+
+  ctx.restore();  // undo source-atop
+}
+
+/**
+ * Adds colour stops to a gradient to simulate `numChannels` cylindrical ridges.
+ * Pattern alternates: shadow → highlight → shadow → highlight → … → shadow
+ */
+function _channelStops(grad, numChannels) {
+  const total = numChannels * 2;
+  for (let i = 0; i <= total; i++) {
+    const pos = i / total;
+    grad.addColorStop(
+      pos,
+      i % 2 === 0
+        ? "rgba(0,0,0,0.20)"          // valley / shadow
+        : "rgba(255,255,255,0.26)"    // ridge / highlight
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
