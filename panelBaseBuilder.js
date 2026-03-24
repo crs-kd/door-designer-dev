@@ -26,7 +26,7 @@ export async function drawGrooves(ctx, width, height, textureDef) {
   const nW = grooveImg.naturalWidth;
   const nH = grooveImg.naturalHeight;
 
-  ctx.globalCompositeOperation = "multiply";
+  ctx.globalCompositeOperation = "overlay";
 
   if (textureDef.id === "vertical") {
     // Fixed groove geometry — the panel is pre-made so spacing never reflows.
