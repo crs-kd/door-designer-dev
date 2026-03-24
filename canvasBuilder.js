@@ -743,13 +743,25 @@ const frameElements = JSON.parse(
           ? null
           : buildMoldingMask({ elements: moldingElements }, moldW, moldH),
     });
-    finalCtx.save();
-    finalCtx.shadowColor = "rgba(0,0,0,0.15)";
-    finalCtx.shadowBlur = 1 * RS;
-    finalCtx.shadowOffsetX = 5;
-    finalCtx.shadowOffsetY = 2 * RS;
-    finalCtx.drawImage(moldingCanvas, moldX, moldY);
-    finalCtx.restore();
+    // Draw molding with a drop shadow clipped to prevent bleeding onto glazing
+    const shadowBlurPx  = 6 * RS;
+    const shadowOffY    = 3 * RS;
+    const pad = shadowBlurPx + shadowOffY;
+    const shadowCanvas  = document.createElement("canvas");
+    shadowCanvas.width  = moldW + pad * 2;
+    shadowCanvas.height = moldH + pad * 2;
+    const shadowCtx = shadowCanvas.getContext("2d");
+    shadowCtx.shadowColor   = "rgba(0,0,0,0.25)";
+    shadowCtx.shadowBlur    = shadowBlurPx;
+    shadowCtx.shadowOffsetX = 0;
+    shadowCtx.shadowOffsetY = shadowOffY;
+    shadowCtx.drawImage(moldingCanvas, pad, pad);
+    // Crop the shadow canvas so nothing bleeds below the molding bottom edge
+    const cropCanvas  = document.createElement("canvas");
+    cropCanvas.width  = moldW + pad * 2;
+    cropCanvas.height = moldH + pad;   // only pad above, no pad below
+    cropCanvas.getContext("2d").drawImage(shadowCanvas, 0, 0);
+    finalCtx.drawImage(cropCanvas, moldX - pad, moldY - pad);
     finalCtx.globalCompositeOperation = "source-over";
   }
   } // end molding loop
@@ -1049,7 +1061,44 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
       const gw = targetWidth - marginX * 2;
       const gh = targetHeight - marginY * 2;
 
-      finalCtx.drawImage(glazeImg, gx, gy, gw, gh);
+      // Compose glazing with the same effects as door panel zones
+      const glazeCanvas = document.createElement("canvas");
+      glazeCanvas.width  = gw;
+      glazeCanvas.height = gh;
+      const glazeCtx = glazeCanvas.getContext("2d");
+
+      // Always draw the glazing image first (clear.png = white fill, patterns = texture)
+      glazeCtx.drawImage(glazeImg, 0, 0, gw, gh);
+
+      // Tint, edge shadows and specular
+      glazeCtx.fillStyle = "rgba(165, 200, 210, 0.07)";
+      glazeCtx.fillRect(0, 0, gw, gh);
+
+      const inset = 7 * RS;
+      const shadowEdges = [
+        { grad: [0, 0, inset, 0],          rect: [0,        0,  inset, gh] },
+        { grad: [gw, 0, gw - inset, 0],    rect: [gw-inset, 0,  inset, gh] },
+        { grad: [0, 0, 0, inset],           rect: [0,        0,  gw,    inset] },
+        { grad: [0, gh, 0, gh - inset],     rect: [0,  gh-inset, gw,    inset] },
+      ];
+      const edgeAlphas = [0.20, 0.20, 0.22, 0.16];
+      shadowEdges.forEach(({ grad, rect }, i) => {
+        const g = glazeCtx.createLinearGradient(...grad);
+        g.addColorStop(0, `rgba(0,0,0,${edgeAlphas[i]})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        glazeCtx.fillStyle = g;
+        glazeCtx.fillRect(...rect);
+      });
+
+      const hiSpan = Math.min(gw, gh) * 0.55;
+      const hi = glazeCtx.createLinearGradient(0, 0, hiSpan, hiSpan);
+      hi.addColorStop(0,   "rgba(255,255,255,0.11)");
+      hi.addColorStop(0.4, "rgba(255,255,255,0.04)");
+      hi.addColorStop(1,   "rgba(255,255,255,0)");
+      glazeCtx.fillStyle = hi;
+      glazeCtx.fillRect(0, 0, gw, gh);
+
+      finalCtx.drawImage(glazeCanvas, gx, gy);
     }
   }
 
