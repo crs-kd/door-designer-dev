@@ -9,7 +9,10 @@ import { RENDER_SCALE, FRAME_RAIL } from "./constants.js";
    ---------------------------------------------
 */
 function getImageURL(filename) {
-  const baseURL = "https://crs-kd.github.io/door-designer/";
+  const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+  const baseURL = isLocal
+    ? "images/"
+    : "https://crs-kd.github.io/door-designer-dev/";
   const filePart = imageOverloads[filename] ? imageOverloads[filename] : filename;
   if (!filePart) return null;
   return (baseURL + filePart + ".png").toLowerCase();
