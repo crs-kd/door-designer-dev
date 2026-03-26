@@ -395,6 +395,10 @@
         cursor: pointer;
         font-size: 1.2rem;
         padding: 0px;
+        color: #041244;
+      }
+      .vertical-icon-bar button.active {
+        color: #f29300;
       }
 
       .vertical-icon-bar label {
@@ -694,6 +698,13 @@
 
             <span class="icon-spacer"> </span>
 
+            <button id="reflectionToggleBtn">
+              <i class="fa-solid fa-sun"></i>
+            </button>
+            <label for="reflectionToggleBtn">Reflection</label>
+
+            <span class="icon-spacer"> </span>
+
             <button id="exportSummaryBtn">
             <i class="fa-solid fa-file"></i>
             </button>
@@ -747,6 +758,19 @@
           <i id="eyeClosedIcon" class="fa-solid fa-eye-slash"></i>
         </button>
         <button
+          id="fourPointBtn"
+          title="Place door with 4 clicks"
+          style="
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #333;
+          "
+        >
+          <i class="fa-solid fa-vector-square"></i>
+        </button>
+        <button
           id="toggleBackBtn"
           style="
             background: none;
@@ -760,7 +784,22 @@
       </div>
       <div id="visualiserContent">
         <canvas id="bgCanvas"></canvas>
+        <canvas id="doorWarpCanvas" style="display:none; position:absolute; top:0; left:0; transform-origin:0 0;"></canvas>
         <canvas id="doorOverlayCanvas"></canvas>
+        <div id="fourPointInstructions" style="
+          display: none;
+          position: absolute;
+          top: 12px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0,0,0,0.65);
+          color: #fff;
+          font-size: 0.8rem;
+          padding: 6px 14px;
+          border-radius: 20px;
+          pointer-events: none;
+          white-space: nowrap;
+        "></div>
       </div>
       <input
         type="file"

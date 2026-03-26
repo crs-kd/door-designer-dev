@@ -2084,6 +2084,9 @@ const glazingDefs = [
   {
     id: "contora",
     image: "contora",
+    tileImage: "contora-tile",
+    tileSize: 150,   // base pixels (× RENDER_SCALE at draw time)
+    tileBlend: "multiply",
   },
     // Charcoal Sticks Glass
     {
@@ -2173,6 +2176,9 @@ const sidescreenGlazingDefs = [
     id: "contora",
     image: "contora",
     margin: FRAME_RAIL,
+    tileImage: "contora-tile",
+    tileSize: 150,   // base pixels (× RENDER_SCALE at draw time)
+    tileBlend: "multiply",
   },
     {
     id: "charcoal",
@@ -2303,6 +2309,7 @@ export const state = {
   backbtmImg: null,
   currentView: "external",
   glazingObscureEnabled: false,
+  glazingReflectionEnabled: false,
   hasFanlight: false,
 };
 

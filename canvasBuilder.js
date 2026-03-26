@@ -57,6 +57,7 @@ import {
   updateDoorOverlay,
   initializeDoorOverlay,
   toggleDoorVisibility,
+  toggleFourPointMode,
 } from "./visualiser.js";
 
 import {
@@ -87,6 +88,23 @@ async function drawPanelElement(ctx, rect, options) {
     rect.height
   );
 
+  ctx.restore();
+}
+
+// Draws the slice of the reflection image that corresponds to this pane's
+// position within the full door canvas, so all panes feel like windows into
+// a single continuous reflection rather than each showing the full image.
+function applyReflection(ctx, paneW, paneH, paneX, paneY, totalW, totalH, img) {
+  const scale = Math.max(totalW / img.width, totalH / img.height);
+  const imgOffX = (totalW - img.width * scale) / 2;
+  const imgOffY = (totalH - img.height * scale) / 2;
+  const srcX = (paneX - imgOffX) / scale;
+  const srcY = (paneY - imgOffY) / scale;
+  const srcW = paneW / scale;
+  const srcH = paneH / scale;
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, paneW, paneH);
   ctx.restore();
 }
 
@@ -188,6 +206,74 @@ function drawFrameEdgeLighting(ctx, w, h, frameTop = FRAME_RAIL, frameBottom = 1
   ctx.restore();
 }
 
+/**
+ * Draws a colour-matched rain deflector bar at the base of a Lorimer door panel.
+ * Rendered as a shallow 3-D wedge: top face (lighter), front face (slightly darker),
+ * left end cap (darker), and a soft drop shadow below.
+ */
+async function drawRainDeflector(ctx, panelWidth, panelHeight, frameFinish) {
+  const RS = RENDER_SCALE;
+
+  // ── Geometry ──────────────────────────────────────────────────────────────
+  const mainH  = Math.round(6 * RS);  // height of the front (main) face
+  const topH   = Math.round(3  * RS);  // height of the sloped top face (steeper)
+  const capW   = Math.round(2  * RS);  // symmetric taper on each side of the top face
+  const dW     = Math.round(panelWidth * 0.85);
+  const dX     = Math.round((panelWidth - dW) / 2);
+  const bottom = panelHeight - FRAME_RAIL * RS + (23 * RS); // bottom of deflector = inner sill edge
+  const mainY  = bottom - mainH;               // top of front face
+  const topY   = mainY  - topH;                // back edge of top face
+
+  // ── Shared finish canvas (full-panel size so texture tiles match the frame) ─
+  const finCanvas = await composeElementGroup({
+    width:           panelWidth,
+    height:          panelHeight,
+    baseColor:       frameFinish.color        || "#999",
+    textureURL:      frameFinish.texture       || null,
+    textureBlend:    frameFinish.textureBlend  || "overlay",
+    textureTileSize: frameFinish.frameTileSize ?? (panelWidth * 0.6),
+    elements: [],
+  });
+
+  // ── 1. Front face ─────────────────────────────────────────────────────────
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(dX, mainY, dW, mainH);
+  ctx.clip();
+  ctx.drawImage(finCanvas, 0, 0);
+  ctx.fillStyle = "rgba(0,0,0,0.15)";  // slight shadow — faces slightly away from light
+  ctx.fill();
+  ctx.restore();
+
+  // ── 2. Top (sloped) face — symmetric trapezoid, both ends taper the same ──
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(dX,              mainY); // front-left
+  ctx.lineTo(dX + dW,         mainY); // front-right
+  ctx.lineTo(dX + dW - capW,  topY);  // back-right  (tapers in)
+  ctx.lineTo(dX + capW,       topY);  // back-left   (tapers in symmetrically)
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(finCanvas, 0, 0);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.12)"; // top face catches more light
+  ctx.fill();
+  ctx.restore();
+
+  // ── 3. Highlight line along front-top edge ────────────────────────────────
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.15)";
+  ctx.fillRect(dX, mainY, dW, Math.round(1.5 * RS));
+  ctx.restore();
+
+  // ── 4. Drop shadow below the bar ─────────────────────────────────────────
+  const shH = Math.round(7 * RS);
+  const shG = ctx.createLinearGradient(0, bottom, 0, bottom + shH);
+  shG.addColorStop(0, "rgba(0,0,0,0.20)");
+  shG.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = shG;
+  ctx.fillRect(dX, bottom, dW, shH);
+}
+
 async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish) {
   const RS = RENDER_SCALE;
   const styleObj = doorStyles.find((s) => s.name === state.selectedStyle);
@@ -260,13 +346,10 @@ async function buildPanelComposite(panelWidth, panelHeight, finish, frameFinish)
   const isInternalView = state.currentView === "internal";
   const frameSuffix = isInternalView ? "-int" : ""; // e.g. "frame-x-int"
 
-  // Lorimer collection doors use a cropped threshold: same frame-x image as the
-  // top rail, flipped vertically, positioned so ~30% hangs off the canvas edge.
-  // All other collections keep the original 17*RS sill.
   const isLorimerCollection = styleObj?.collection === "Lorimer";
   const thresholdVisH = isLorimerCollection
-    ? Math.round(FRAME_RAIL * RS * 0.70)  // Lorimer: ~30% cropped off
-    : 17 * RS;                     // Allure / Elegance: original sill height
+    ? FRAME_RAIL * RS   // Lorimer: full frame-x height, no crop
+    : 17 * RS;          // Allure / Elegance: original sill height
 
 const frameElements = JSON.parse(
   JSON.stringify([
@@ -275,7 +358,7 @@ const frameElements = JSON.parse(
       mixedRect: { y: 0, height: FRAME_RAIL * RS, xFactor: 0, widthFactor: 1 },
       options: { imageURL: getImageURL(`frame-x${frameSuffix}`), textureRotation: 0 },
     },
-    // Bottom frame — Lorimer: cropped & flipped. Others: standard 17px sill.
+    // Bottom frame — Lorimer: full-height flipped frame-x. Others: standard 17px sill.
     ...(isLorimerCollection ? [{
       id: "bottom-frame",
       rect: { x: 0, y: panelHeight - thresholdVisH, width: panelWidth, height: FRAME_RAIL * RS },
@@ -313,8 +396,7 @@ const frameElements = JSON.parse(
         textureRotation: 45,
       },
     },
-    // Bottom corners — Lorimer: frame-corner flipped, cropped same as threshold.
-    //                  Others: original frame-y flipped.
+    // Bottom corners — Lorimer: frame-corner flipped. Others: original frame-y flipped.
     ...(isLorimerCollection ? [
       {
         id: "bottom-right-corner",
@@ -359,7 +441,7 @@ const frameElements = JSON.parse(
   finalCtx.globalCompositeOperation = "source-over";
   drawFrameEdgeLighting(finalCtx, panelWidth, panelHeight, FRAME_RAIL * RS, thresholdVisH, FRAME_RAIL * RS);
 
-  // Metal threshold overlay — Allure & Elegance only (Lorimer uses the cropped frame-x instead)
+  // Metal threshold overlay — Allure & Elegance only (Lorimer uses the flipped frame-x instead)
   if (!isLorimerCollection) {
     const threshH = 5 * RS;
     const threshY = panelHeight - threshH;
@@ -368,6 +450,11 @@ const frameElements = JSON.parse(
     finalCtx.globalCompositeOperation = "source-over";
     finalCtx.fillStyle = "rgb(236, 236, 236)";
     finalCtx.fillRect(threshX, threshY, threshW, threshH);
+  }
+
+  // Rain deflector — Lorimer collection only
+  if (isLorimerCollection) {
+    await drawRainDeflector(finalCtx, panelWidth, panelHeight, frameFinish);
   }
 
   // Step 3: Glazing
@@ -390,6 +477,24 @@ const frameElements = JSON.parse(
       const sharedImg = await loadImage(getImageURL(imgKey)).catch(() =>
         loadImage(getImageURL(baseName))
       );
+
+      // Load reflection image if enabled
+      const reflectionImg = state.glazingReflectionEnabled
+        ? await loadImage(getImageURL("reflection", "jpg")).catch(() => null)
+        : null;
+
+      // Build a reusable tile-source canvas if this glazing uses tiling
+      let tileSrcCanvas = null;
+      if (glazeDef.tileImage && !state.glazingObscureEnabled) {
+        const tileImg = await loadImage(getImageURL(glazeDef.tileImage)).catch(() => null);
+        if (tileImg) {
+          const tileSize = Math.round((glazeDef.tileSize ?? 250) * RS);
+          tileSrcCanvas = document.createElement("canvas");
+          tileSrcCanvas.width  = tileSize;
+          tileSrcCanvas.height = tileSize;
+          tileSrcCanvas.getContext("2d").drawImage(tileImg, 0, 0, tileSize, tileSize);
+        }
+      }
 
       for (const layout of layouts) {
         const RS = RENDER_SCALE;
@@ -522,6 +627,15 @@ const frameElements = JSON.parse(
             glazeCtx.drawImage(sharedImg, -w / 2, -h / 2, w, h);
             glazeCtx.restore();
           }
+        } else if (tileSrcCanvas) {
+          // White glass base so overlay blend has a consistent starting point
+          glazeCtx.fillStyle = "#ffffff";
+          glazeCtx.fillRect(0, 0, width, height);
+          glazeCtx.globalCompositeOperation = glazeDef.tileBlend || "source-over";
+          const pat = glazeCtx.createPattern(tileSrcCanvas, "repeat");
+          glazeCtx.fillStyle = pat;
+          glazeCtx.fillRect(0, 0, width, height);
+          glazeCtx.globalCompositeOperation = "source-over";
         } else if (sharedImg) {
           glazeCtx.drawImage(sharedImg, 0, 0, width, height);
         }
@@ -531,6 +645,9 @@ const frameElements = JSON.parse(
           // 1. Subtle blue-green glass tint
           glazeCtx.fillStyle = "rgba(165, 200, 210, 0.07)";
           glazeCtx.fillRect(0, 0, width, height);
+
+          // 1b. Reflection overlay
+          if (reflectionImg) applyReflection(glazeCtx, width, height, glazeX, glazeY, panelWidth, panelHeight, reflectionImg);
 
           // 2. Inset edge shadows — glass sitting in rebate
           const inset = 7 * RS;
@@ -1057,6 +1174,9 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
 
   if (glazeDef && glazeDef.image) {
     const glazeImg = await loadImage(getImageURL(glazeDef.image));
+    const ssReflectionImg = state.glazingReflectionEnabled
+      ? await loadImage(getImageURL("reflection", "jpg")).catch(() => null)
+      : null;
     if (glazeImg) {
       const marginX = (glazeDef.marginX ?? glazeDef.margin ?? 0) * RS;
       const marginY = (glazeDef.marginY ?? glazeDef.margin ?? 0) * RS;
@@ -1074,12 +1194,35 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
       glazeCanvas.height = gh;
       const glazeCtx = glazeCanvas.getContext("2d");
 
-      // Always draw the glazing image first (clear.png = white fill, patterns = texture)
-      glazeCtx.drawImage(glazeImg, 0, 0, gw, gh);
+      // Draw glazing: tiled pattern if available, otherwise stretch image to fit
+      if (glazeDef.tileImage) {
+        const ssTileImg = await loadImage(getImageURL(glazeDef.tileImage)).catch(() => null);
+        if (ssTileImg) {
+          const tileSize = Math.round((glazeDef.tileSize ?? 250) * RS);
+          const ssTileCanvas = document.createElement("canvas");
+          ssTileCanvas.width  = tileSize;
+          ssTileCanvas.height = tileSize;
+          ssTileCanvas.getContext("2d").drawImage(ssTileImg, 0, 0, tileSize, tileSize);
+          // White glass base so overlay blend has a consistent starting point
+          glazeCtx.fillStyle = "#ffffff";
+          glazeCtx.fillRect(0, 0, gw, gh);
+          glazeCtx.globalCompositeOperation = glazeDef.tileBlend || "source-over";
+          const pat = glazeCtx.createPattern(ssTileCanvas, "repeat");
+          glazeCtx.fillStyle = pat;
+          glazeCtx.fillRect(0, 0, gw, gh);
+          glazeCtx.globalCompositeOperation = "source-over";
+        } else {
+          glazeCtx.drawImage(glazeImg, 0, 0, gw, gh);
+        }
+      } else {
+        glazeCtx.drawImage(glazeImg, 0, 0, gw, gh);
+      }
 
       // Tint, edge shadows and specular
       glazeCtx.fillStyle = "rgba(165, 200, 210, 0.07)";
       glazeCtx.fillRect(0, 0, gw, gh);
+
+      if (ssReflectionImg) applyReflection(glazeCtx, gw, gh, gx, gy, targetWidth, targetHeight, ssReflectionImg);
 
       const inset = 7 * RS;
       const shadowEdges = [
@@ -1347,6 +1490,11 @@ async function buildSidePanelComposite(targetWidth, targetHeight, frameFinish, f
     } else if (imageKey) {
       const img = await loadImage(getImageURL(imageKey));
       if (img) glazeCtx.drawImage(img, 0, 0, glazeW, glazeH);
+    }
+
+    if (state.glazingReflectionEnabled) {
+      const refImg = await loadImage(getImageURL("reflection", "jpg")).catch(() => null);
+      if (refImg) applyReflection(glazeCtx, glazeW, glazeH, glazeX, glazeY, targetWidth, targetHeight, refImg);
     }
 
     const glazeX = (targetWidth - glazeW) / 2;
@@ -2585,6 +2733,13 @@ document.addEventListener("DOMContentLoaded", () => {
   //   updateSummary(); // if summary reflects the glazing state
   // });
 
+  document.getElementById("reflectionToggleBtn").addEventListener("click", (e) => {
+    state.glazingReflectionEnabled = !state.glazingReflectionEnabled;
+    e.currentTarget.classList.toggle("active", state.glazingReflectionEnabled);
+    updateCanvasPreview();
+  });
+
+  document.getElementById("fourPointBtn").addEventListener("click", toggleFourPointMode);
   document.getElementById("toggleDoorVisibilityBtn").addEventListener("click", toggleDoorVisibility);
 
   document.getElementById("toggleBackBtn").addEventListener("click", () => {
