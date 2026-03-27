@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#041244" />
+    <title>Door Designer — CR Smith</title>
+
+    <!-- Preconnect for Typekit CDN -->
+    <link rel="preconnect" href="https://use.typekit.net" crossorigin />
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://use.typekit.net/kql4iya.css" />
+    <script src="https://kit.fontawesome.com/917bdeabdb.js" crossorigin="anonymous"></script>
+
+    <!-- PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Design stylesheet -->
+    <link rel="stylesheet" href="design-test.css" />
+  </head>
+  <body>
+
+    <!-- ================================================
+         START SCREEN
+         ================================================ -->
+    <div class="start-screen" id="startScreen" role="dialog" aria-label="Select door type to begin">
+      <div class="start-content">
+        <img
+          src="./images/logo-white.png"
+          alt="CR Smith"
+          class="start-logo"
+          width="190"
+          height="60"
+        />
+        <h2>Your dream door is<br>only a few steps away</h2>
+        <p>Please select a door type to begin</p>
+        <!-- Door type buttons populated by JS -->
+        <div class="start-range-container" role="group" aria-label="Door types"></div>
+      </div>
+    </div>
+
+    <!-- ================================================
+         MAIN DESIGNER
+         ================================================ -->
+    <div class="door-designer-container" aria-label="Door designer">
+
+      <!-- Back-to-start -->
+      <button
+        class="close-btn"
+        id="closeDesignerBtn"
+        aria-label="Back to start screen"
+        title="Back to start"
+      >&#x2715;</button>
+
+      <!-- ============================================
+           SIDEBAR  (Step navigation + dimensions)
+           ============================================ -->
+      <aside class="menu-container" aria-label="Configuration steps">
+
+        <div class="logo" aria-hidden="true">
+          <img
+            src="./images/logo-white.png"
+            alt="CR Smith Door Designer"
+            width="128"
+            height="40"
+          />
+        </div>
+
+        <!-- Range selector — always visible, locked at top -->
+        <div class="sidebar-range" role="group" aria-label="Select door range">
+          <button
+            class="sidebar-range-btn"
+            data-range="Lorimer"
+            aria-pressed="false"
+          >Lorimer</button>
+          <button
+            class="sidebar-range-btn"
+            data-range="TimberLuxe"
+            aria-pressed="false"
+          >TimberLuxe</button>
+        </div>
+
+        <nav class="step-menu" aria-label="Configuration steps">
+          <button class="step-menu-item" data-index="0" aria-current="step">
+            <span class="step-num" aria-hidden="true">01</span>
+            <span class="step-name">Configuration</span>
+          </button>
+          <button class="step-menu-item hidden" data-index="1" id="sidescreenMenuItem">
+            <span class="step-num" aria-hidden="true">02</span>
+            <span class="step-name">Sidescreen</span>
+          </button>
+          <!-- Range step kept for JS compatibility but hidden — handled by sidebar buttons above -->
+          <button class="step-menu-item hidden" data-index="2" id="rangeMenuItem" aria-hidden="true" tabindex="-1">
+            <span class="step-num" aria-hidden="true">—</span>
+            <span class="step-name">Range</span>
+          </button>
+          <button class="step-menu-item" data-index="3" id="panelMenuItem">
+            <span class="step-num" aria-hidden="true">03</span>
+            <span class="step-name">Panel</span>
+          </button>
+          <button class="step-menu-item" data-index="4">
+            <span class="step-num" aria-hidden="true">04</span>
+            <span class="step-name">Colour</span>
+          </button>
+          <button class="step-menu-item" data-index="5" id="glazingMenuItem">
+            <span class="step-num" aria-hidden="true">05</span>
+            <span class="step-name">Glazing</span>
+          </button>
+          <button class="step-menu-item" data-index="6">
+            <span class="step-num" aria-hidden="true">06</span>
+            <span class="step-name">Hardware</span>
+          </button>
+        </nav>
+
+        <!-- Style/dimension info (JS-populated) -->
+        <div id="styleSizeInfo" class="style-size-info" aria-live="polite"></div>
+
+        <!-- Dimension inputs -->
+        <div class="panel-size-inputs">
+          <div class="size-input">
+            <label for="doorWidthInput">
+              Width <span class="dim-unit">mm</span>
+            </label>
+            <input
+              type="number"
+              id="doorWidthInput"
+              name="doorWidth"
+              autocomplete="off"
+              inputmode="numeric"
+              step="1"
+              value="900"
+              min="0"
+              max="5000"
+              aria-label="Door width in millimetres"
+            />
+          </div>
+          <div class="size-input">
+            <label for="doorHeightInput">
+              Height <span class="dim-unit">mm</span>
+            </label>
+            <input
+              type="number"
+              id="doorHeightInput"
+              name="doorHeight"
+              autocomplete="off"
+              inputmode="numeric"
+              step="1"
+              value="2100"
+              min="0"
+              max="5000"
+              aria-label="Door height in millimetres"
+            />
+          </div>
+        </div>
+
+        <div class="panel-size-inputs">
+          <div class="size-input" style="display: none;">
+            <label for="leftSidescreenWidthInput">
+              Left <span class="dim-unit">mm</span>
+            </label>
+            <input
+              type="number"
+              id="leftSidescreenWidthInput"
+              name="leftSidescreenWidth"
+              autocomplete="off"
+              inputmode="numeric"
+              step="1"
+              value="350"
+              min="230"
+              max="1200"
+              aria-label="Left sidescreen width in millimetres"
+            />
+          </div>
+          <div class="size-input" style="display: none;">
+            <label for="rightSidescreenWidthInput">
+              Right <span class="dim-unit">mm</span>
+            </label>
+            <input
+              type="number"
+              id="rightSidescreenWidthInput"
+              name="rightSidescreenWidth"
+              autocomplete="off"
+              inputmode="numeric"
+              step="1"
+              value="350"
+              min="230"
+              max="1200"
+              aria-label="Right sidescreen width in millimetres"
+            />
+          </div>
+        </div>
+
+        <div class="panel-size-inputs">
+          <div class="size-input" style="display: none;">
+            <label for="fanLightHeightInput">
+              Fanlight <span class="dim-unit">mm</span>
+            </label>
+            <input
+              type="number"
+              id="fanLightHeightInput"
+              name="fanlightHeight"
+              autocomplete="off"
+              inputmode="numeric"
+              step="1"
+              value="150"
+              min="100"
+              max="200"
+              aria-label="Fanlight height in millimetres"
+            />
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- ============================================
+           THUMBNAIL PANEL  (Step options)
+           ============================================ -->
+      <div class="thumbnail-container" role="region" aria-label="Options">
+
+        <!-- Step 0: Configuration -->
+        <div id="configuration-step" class="step" role="group" aria-labelledby="config-title">
+          <p class="step-section-title" id="config-title">Configuration</p>
+          <div class="grid-container" id="configuration-list" role="listbox" aria-label="Door configuration options"></div>
+        </div>
+
+        <!-- Step 1: Sidescreen Style -->
+        <div id="sidescreen-style-step" class="step" role="group" aria-labelledby="sidescreen-title">
+          <p class="step-section-title" id="sidescreen-title">Sidescreen</p>
+          <div class="grid-container" id="sidescreen-style-list" role="listbox" aria-label="Sidescreen style options"></div>
+        </div>
+
+        <!-- Step 2: Range -->
+        <div id="range-step" class="step" role="group" aria-labelledby="range-title">
+          <p class="step-section-title" id="range-title">Range</p>
+          <div id="range-list" role="listbox" aria-label="Door range options"></div>
+        </div>
+
+        <!-- Step 3: Panel Style -->
+        <div id="style-step" class="step" role="group" aria-labelledby="style-title">
+          <p class="step-section-title" id="style-title">Panel Style</p>
+          <div id="style-list" role="listbox" aria-label="Panel style options"></div>
+        </div>
+
+        <!-- Step 4: Colour -->
+        <div id="finish-step" class="step" role="group" aria-labelledby="finish-title">
+          <p class="step-section-title" id="finish-title">Colour</p>
+          <div class="finish-group">
+            <div class="grid-container" id="external-finish-list" role="listbox" aria-label="External colour options"></div>
+          </div>
+          <div class="finish-group">
+            <div class="grid-container" id="internal-finish-list" role="listbox" aria-label="Internal colour options"></div>
+          </div>
+        </div>
+
+        <!-- Step 5: Glazing -->
+        <div id="glazing-step" class="step" role="group" aria-labelledby="glazing-title">
+          <p class="step-section-title" id="glazing-title">Glazing</p>
+          <div class="grid-container" id="glazing-list" role="listbox" aria-label="Glazing pattern options"></div>
+        </div>
+
+        <!-- Step 6: Hardware -->
+        <div id="hardware-step" class="step" role="group" aria-labelledby="hardware-title">
+          <p class="step-section-title" id="hardware-title">Hardware</p>
+          <h3 class="collection-title">Colour</h3>
+          <div class="grid-container" id="hardware-colour-list" role="listbox" aria-label="Hardware colour options"></div>
+          <h3 class="collection-title">Handle</h3>
+          <div class="grid-container" id="handle-list" role="listbox" aria-label="Handle style options"></div>
+          <div id="letterplate-section">
+            <h3 class="collection-title">Letterplate</h3>
+            <div class="grid-container" id="letterplate-list" role="listbox" aria-label="Letterplate position options"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================
+           PREVIEW AREA
+           ============================================ -->
+      <main class="preview-container" aria-label="Door preview">
+
+        <div class="preview-top" aria-live="polite">
+          <span class="currentViewText" id="currentViewText">External</span>
+        </div>
+
+        <div class="preview-body">
+          <canvas
+            id="previewCanvas"
+            role="img"
+            aria-label="Live door preview"
+          ></canvas>
+
+          <!-- Icon controls -->
+          <div class="vertical-icon-bar" role="toolbar" aria-label="View controls">
+
+            <div class="icon-item">
+              <button
+                id="hingeToggleBtn"
+                aria-label="Swap hinge side"
+                title="Swap Hinge Side"
+              >
+                <i class="fa-solid fa-door-open" aria-hidden="true"></i>
+              </button>
+              <label id="hingeLabel" for="hingeToggleBtn">Hinge</label>
+            </div>
+
+            <div class="icon-item">
+              <button
+                id="viewToggleBtn"
+                aria-label="Toggle between external and internal view"
+                title="Change View"
+              >
+                <i class="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
+              </button>
+              <label for="viewToggleBtn">View</label>
+            </div>
+
+            <hr class="icon-sep" aria-hidden="true" />
+
+            <div class="icon-item">
+              <button
+                id="visualiserToggleBtn"
+                aria-label="Open visualiser — place door on a photo"
+                title="Open Visualiser"
+              >
+                <i class="fa-solid fa-image" aria-hidden="true"></i>
+              </button>
+              <label for="visualiserToggleBtn">Visualiser</label>
+            </div>
+
+            <div class="icon-item">
+              <button
+                id="saveDesignBtn"
+                aria-label="Save design as image"
+                title="Save Design"
+              >
+                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+              </button>
+              <label for="saveDesignBtn">Save</label>
+            </div>
+
+            <div class="icon-item">
+              <button
+                id="reflectionToggleBtn"
+                aria-label="Toggle glazing reflection"
+                title="Toggle Reflection"
+              >
+                <i class="fa-solid fa-sun" aria-hidden="true"></i>
+              </button>
+              <label for="reflectionToggleBtn">Reflection</label>
+            </div>
+
+            <div class="icon-item">
+              <button
+                id="exportSummaryBtn"
+                aria-label="Export design summary as PDF"
+                title="Export Summary"
+              >
+                <i class="fa-solid fa-file" aria-hidden="true"></i>
+              </button>
+              <label for="exportSummaryBtn">Export</label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Summary bar -->
+        <div class="preview-bottom">
+          <div id="summary" aria-live="polite" aria-label="Current configuration summary"></div>
+        </div>
+
+      </main>
+
+    </div><!-- /.door-designer-container -->
+
+    <!-- ================================================
+         VISUALISER MODE
+         ================================================ -->
+    <div id="visualiserMode" role="dialog" aria-label="Visualiser — place door on a background photo">
+
+      <div class="visualiser-toolbar" role="toolbar" aria-label="Visualiser controls">
+
+        <button id="uploadImageBtn" aria-label="Upload background image">
+          <i class="fa-solid fa-file-arrow-up" aria-hidden="true"></i>
+          <span>Upload</span>
+        </button>
+
+        <button id="saveMockupBtn" aria-label="Save visualiser image">
+          <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+          <span>Save</span>
+        </button>
+
+        <button
+          id="toggleDoorVisibilityBtn"
+          aria-label="Toggle door visibility"
+          title="Show / hide door"
+        >
+          <i id="eyeOpenIcon"   class="fa-solid fa-eye"       aria-hidden="true" style="display:none"></i>
+          <i id="eyeClosedIcon" class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+        </button>
+
+        <button
+          id="fourPointBtn"
+          aria-label="Place door using 4-point perspective"
+          title="4-point perspective placement"
+        >
+          <i class="fa-solid fa-vector-square" aria-hidden="true"></i>
+          <span>Perspective</span>
+        </button>
+
+        <button id="toggleBackBtn" aria-label="Close visualiser and return to designer">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          <span>Close</span>
+        </button>
+
+      </div>
+
+      <div id="visualiserContent" aria-label="Visualiser canvas area">
+        <canvas id="bgCanvas" aria-label="Background photo" role="img"></canvas>
+        <canvas
+          id="doorWarpCanvas"
+          style="display:none; position:absolute; top:0; left:0; transform-origin:0 0;"
+          aria-hidden="true"
+        ></canvas>
+        <canvas id="doorOverlayCanvas" aria-label="Door placement overlay" role="img"></canvas>
+        <div
+          id="fourPointInstructions"
+          aria-live="polite"
+          aria-atomic="true"
+        ></div>
+      </div>
+
+      <input
+        type="file"
+        id="bgFileInput"
+        accept="image/*"
+        style="display: none"
+        aria-hidden="true"
+      />
+
+    </div><!-- /#visualiserMode -->
+
+    <script type="module" src="./main.js"></script>
+
+    <!-- Range selector wiring — runs after main.js has initialised -->
+    <script type="module">
+      import { state } from './data.js';
+      import { updateCanvasPreview } from './canvasBuilder.js';
+
+      const rangeBtns = document.querySelectorAll('.sidebar-range-btn');
+      const stepMenu  = document.querySelector('.step-menu');
+
+      // Hide step menu until a range is chosen
+      stepMenu.style.opacity = '0.35';
+      stepMenu.style.pointerEvents = 'none';
+
+      rangeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const range = btn.dataset.range;
+
+          // Visual: update button pressed state
+          rangeBtns.forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+          });
+          btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
+
+          // Reveal step menu
+          stepMenu.style.opacity = '';
+          stepMenu.style.pointerEvents = '';
+
+          // Update app state
+          state.selectedRange = range;
+          state.selectedCollection = null;
+
+          // Trigger the existing range thumbnail click to run all JS side effects
+          // (populates style grid, updates summary, etc.)
+          const thumbs = document.querySelectorAll('#range-list .thumbnail');
+          thumbs.forEach(thumb => {
+            const label = thumb.querySelector('p');
+            if (label && label.textContent.trim().toLowerCase() === range.toLowerCase()) {
+              thumb.click();
+            }
+          });
+
+          // Navigate to Panel step (data-index 3)
+          const panelBtn = document.querySelector('.step-menu-item[data-index="3"]');
+          if (panelBtn) panelBtn.click();
+
+          updateCanvasPreview();
+        });
+      });
+    </script>
+  </body>
+</html>
