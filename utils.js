@@ -12,7 +12,7 @@ function getImageURL(filename, ext = "png") {
   const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
   const baseURL = isLocal
     ? "images/"
-    : "https://crs-kd.github.io/door-designer-dev/";
+    : "https://crs-kd.github.io/door-designer-dev/images/";
   const filePart = imageOverloads[filename] ? imageOverloads[filename] : filename;
   if (!filePart) return null;
   return (baseURL + filePart + "." + ext).toLowerCase();
